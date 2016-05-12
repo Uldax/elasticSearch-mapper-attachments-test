@@ -1,0 +1,1 @@
+"# elasticSearch-mapper-attachments-test" 
