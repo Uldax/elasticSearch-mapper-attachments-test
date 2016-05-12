@@ -1,56 +1,84 @@
 var fs = require('fs')
 var request = require("request");
+//ElasticSearch parameters
 var elasticSearchPort = "9200";
-var filePath = "../indexedPDF/";
+var protocol = "http"
+var indexName = "trying-out-mapper-attachments/person"
 var serverIp = "localhost";	
-var nbr=4;
 
+//Folder parameters
+var folderName = "indexedDocuments";
+var baseURL = protocol+"://"+serverIp+":"+elasticSearchPort+"/"+indexName;
+var nbr=10;
+
+//Option for resquest
 var options = {
-    port: 9200,
     method: 'POST',
-    url: 'http://localhost:9200/trying-out-mapper-attachments/person/'+nbr,
+    headers : {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
 };
 
-    
 
-function indexFile() { 
-    fs.readFile(filePath +'test1.pdf', 'base64', function (err,data) {
-        if (err) {
-            return console.log(err);
-        } else{     
-            console.log("File loaded") ;                  
-            var requestData = {   
-                "cv" : data
-            }  
-            options.json = requestData;
-            options.headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(data)
-            }
-            console.log("Request send with") ;   
-            console.log(options.url); 
-            request(options, function(err, response, body) {
-                if (!err) {
-                    if(response.statusCode === 200) {
-                        //Parse response into JSON
-                        var info = JSON.parse(body);
-                        if (info) {
-                            console.log(info);
-                        } 
-                
-                    } else {
-                        if (response.statusCode === 400) {
-                            console.log('Bad Request');
-                        }
-                        console.log(response.statusCode);
-                    }         
-                } else{
-                    console.log(err.message);
-                }   
-            });
-            console.log('request end');
-        }    
-    })
+// function to encode file data to base64 encoded string
+function base64_encode(file) {
+    // read binary data
+    var bitmap = fs.readFileSync(file);
+    // convert binary data to base64 encoded string
+    return new Buffer(bitmap).toString('base64');
 }
-   
-indexFile();
+    
+// function to index file in elastic serveur by REST API
+function indexFile(filename,index) { 
+    var base64file = base64_encode("../"+folderName+"/"+filename);
+    console.log("File loaded") ; 
+    
+    //object depending on elastic mapping                 
+    var requestData = {   
+        "cv" : base64file
+    }  
+    options.json = requestData;
+    options.url =  baseURL+"/"+ index;
+    
+    console.log("Request send to") ;   
+    console.log(options.url); 
+    request(options, function(err, response, body) {
+        if (!err) {
+            if(response.statusCode === 200) {    
+                if (typeof body != undefined) {
+                    console.log("Creation of "+filename+" state : " + body.created);
+                } 
+    
+            } else {
+                if (response.statusCode === 400) {
+                    console.log('Bad Request');
+                }
+                console.log(response.statusCode);
+            }         
+        } else{
+            console.log(err.message);
+        }   
+    });
+    console.log('request end');
+}   
+
+
+//Read the file name from folder and index them
+function readFolder(dirname,onError) {
+  fs.readdir(dirname, function(err, filenames) {
+    if (err) {
+      onError(err);
+      return;
+    }
+    filenames.forEach(function(filename,index) {
+      indexFile(filename,index)
+    });
+  });
+}
+ 
+
+ 
+readFolder("../"+folderName, function(err){
+    console.log("Error occured")
+    console.log(err);
+});
