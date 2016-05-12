@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "server.js",
   "dependencies": {
+    "exif-parser": "^0.1.9",
     "request": "^2.67.0"
   }
 }
