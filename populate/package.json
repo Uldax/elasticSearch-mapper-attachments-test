@@ -1,0 +1,8 @@
+{
+  "name": "elasticSearch-mapper-attachments-test",
+  "version": "0.1.0",
+  "main": "server.js",
+  "dependencies": {
+    "request": "^2.67.0"
+  }
+}
