@@ -1,0 +1,26 @@
+{
+  "name": "pcontat",
+  "authors": [
+    "pcontat <contat.paul@gmail.com>"
+  ],
+  "description": "Personal Website",
+  "main": "",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "^2.2.1",
+    "scrollmagic": "^2.0.5",
+    "gsap": "^1.18.2",
+    "animate.css": "^3.5.1",
+    "hammerjs": "^2.0.6"
+  }
+}

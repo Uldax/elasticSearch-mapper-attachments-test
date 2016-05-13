@@ -1,0 +1,32 @@
+//- include index.html
+doctype html
+html
+head
+    title Document Search
+    meta(charset='UTF-8')
+    meta(name='description' content='todo')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0')
+    link(rel='stylesheet', href='/stylesheets/style.css')
+
+body
+    #contentWrap
+        #form
+            form
+                #innerForm
+                    input#inputSearch(placeholder="Enter your keywords")
+                    br
+                    #bottomForm
+                        select#userPrivilege(name="users")
+                            each user in roles
+                                option(value=user.group_id)= user.group_name
+                            
+                        button#submitButton
+                            img(src="/images/search.png")
+                              
+script(type='text/javascript',src="/bower_components/jquery/dist/jquery.min.js")
+script(type="text/javascript", src="/javascripts/menu.js")
+
+
+
+
+
