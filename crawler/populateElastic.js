@@ -111,6 +111,7 @@ function indexFile(filename) {
         });
     })
         .catch(function (err) {
+            console.log("Catch in indexFile");
             console.log(err);
         })
 
@@ -195,7 +196,10 @@ function createIndex() {
             request(options, function (err, response, body) {
                 if (!err && response.statusCode === 200) {
                     console.log("Success creation of index");
-                } else console.log(err);
+                } else {
+                    console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? ");
+                    console.log(err); 
+                }
             });
         }
         else {
@@ -217,6 +221,7 @@ function cleanALL() {
         if (!err && response.statusCode === 200) {
             createIndex();
         } else {
+            console.log("Error in delete index");
             console.log(err);
         }
     });
@@ -226,6 +231,7 @@ function cleanALL() {
             if (!err) {
                 console.log("Table Document_privilege delete ");
             } else {
+                console.log("Error in delete");
                 console.log(err);
             }
         });
@@ -236,6 +242,7 @@ function cleanALL() {
             if (!err) {
                 console.log("Table Document delete ");
             } else {
+                console.log("Error in delete2");
                 console.log(err);
             }
           
