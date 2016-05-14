@@ -11,7 +11,7 @@ var baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-    console.log('home');
+    console.log('call to home');
     pg.connect(connectionString, function (err, client, done) {
         if (err) {
             return console.error('error fetching client from pool', err);
@@ -32,7 +32,6 @@ router.get('/', function (req, res, next) {
 
 //Ajax endpoint for elastic search
 router.get('/search', function (req, res, next) {
-    console.log('call to search');
     var requestString = req.query.search || "";
     console.log(requestString);
     var objectRequest = {
