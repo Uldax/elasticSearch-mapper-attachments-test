@@ -6,7 +6,6 @@ var userPrivilege = document.querySelector("#userPrivilege");
 //set eventlidtener onclick call function 
 buttonSearch.addEventListener("click", ajaxCall);
 
-
 function ajaxCall(evt) {
     evt.preventDefault();
     var xhr = null;
@@ -38,11 +37,14 @@ function ajaxCall(evt) {
     
 }
 
-    
-
     function readData(data) {
         myObject = JSON.parse(data);
-        for (node in myObject.hits.hits){
-            console.log(myObject.hits.hits[node]._source.my_attachment._name);
+        if('error' in data){
+            console.log(data.error);
+        }
+        else{
+            for (node in myObject.hits.hits){
+                console.log(myObject.hits.hits[node]._source.my_attachment._name);
+            }
         }
     }
