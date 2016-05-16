@@ -55,11 +55,15 @@ router.get('/search', function (req, res, next) {
         if (!err && response.statusCode === 200) {                    
             if (body.hits.total != 0) {
                 res.send(body);
+                console.log("body");
             } else {
                 res.send(err)
+                console.log(err);
+                console.log(response.statusCode);
             }
         } else {
            res.send("No resultat found");
+           console.log("no result");
         }
     });
 });

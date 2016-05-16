@@ -53,10 +53,17 @@ body{
     margin-right: 0%;
     padding-bottom: 15%;
     border: none;
+    height: 80px;
+    width: 80px;
+    outline: none;  
     
 }
 
 #buttonSearch{
     height: 80px;
     width: 80px;
+}
+
+#buttonSearch:active{
+    opacity: 0.5;
 }
