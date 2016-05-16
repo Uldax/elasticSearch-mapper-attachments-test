@@ -1,5 +1,5 @@
 body{
-    background-color: #52E160;
+    background-color: #52E190;
 }
 
 #contentWrap{
@@ -23,9 +23,10 @@ body{
 #inputSearch{
      width: inherit;
      margin-top: 40px;
-     margin-bottom: 30px;
-     height: 40px;
+     margin-bottom: 20px;
+     height: 30px;
      font-size: 30px;
+     border-radius: 10px;
 }
 
 #bottomForm{
@@ -43,10 +44,19 @@ body{
     width: 50%;
     height: 30px;
     margin-top: 15px;
+    border-radius: 10px;
 }
 
 #submitButton{
     float: right;
     background-color: transparent;
-    margin-right: 10%;
+    margin-right: 0%;
+    padding-bottom: 15%;
+    border: none;
+    
+}
+
+#buttonSearch{
+    height: 80px;
+    width: 80px;
 }
