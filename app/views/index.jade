@@ -6,6 +6,7 @@ head
     meta(charset='UTF-8')
     meta(name='description' content='todo')
     meta(name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0')
+    link(rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css")
     link(rel='stylesheet', href='/stylesheets/style.css')
 
 body
@@ -22,11 +23,33 @@ body
                             
                         button#submitButton
                             img#buttonSearch(src="/images/search.png")
-                              
+                    #advancedResearch
+                        button#buttonAdvancedResearch(class="btn btn-success") Advanced Research
+                        #parametersAdvancedResearch
+                            select#filterResults(class="spaceBetween")
+                                option(value="allResults") All Results
+                                option(value="exactWords") Exact Words
+                            select#typePreference(class="spaceBetween")
+                                option(value="allTypes") All Types
+                                option(value="babillard") Bulletin Board
+                                option(value="pdf") PDF
+                                option(value="docx") DOCX
+                            label Order by
+                            select#orderPreference(class="spaceBetween")
+                                option(value="relevance") Relevance
+                                option(value="alphabetical") Alphabetical
+                            select#datePreference(class="spaceBetween")
+                                option(value="allDate") All Dates
+                                option(value="custom") Custom
+                                
+                                
 //- script
 //- (type='text/javascript',src="/bower_components/jquery/dist/jquery.min.js")
 
+script(type="text/javascript", src="/bower_components/jquery/dist/jquery.min.js")
 script(type="text/javascript", src="/javascripts/ajax.js")
+script(type="text/javascript", src="/javascripts/script.js")
+
 
 
 

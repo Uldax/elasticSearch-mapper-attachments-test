@@ -32,19 +32,19 @@ function ajaxCall(evt) {
     };
      
     //akax vers /search?search=XX&authLevel=XX
-    xhr.open("GET", "/search?search=" + inputSearch.value + "&authAccess=" + userPrivilege.value, true);
+    xhr.open("GET", "/search?search=" + inputSearch.value + "&userAuth=" + userPrivilege.value, true);
     xhr.send(null);
     
 }
 
     function readData(data) {
-        myObject = JSON.parse(data);
-        if('error' in data){
-            console.log(data.error);
+        var myObject = JSON.parse(data);
+        if(myObject.hasOwnProperty("error")){
+            console.log(myObject.error);
         }
         else{
-            for (node in myObject.hits.hits){
-                console.log(myObject.hits.hits[node]._source.my_attachment._name);
+            for (node in myObject){
+                console.log(myObject[node]._source.my_attachment._name);
             }
         }
     }
