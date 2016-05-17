@@ -39,7 +39,7 @@ router.get('/search', function (req, res, next) {
     var userAuth = req.query.userAuth || 0;
     if (userAuth === 0 || requestString==="" ) {
         res.send({
-            err: "Missing parameters"
+            error: "Missing parameters"
         });
         return;
     }
