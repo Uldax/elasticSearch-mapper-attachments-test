@@ -132,18 +132,22 @@ router.get('/search', function (req, res, next) {
 
     function filterOutput() {
         filterCall = true;
-        var filterResult = [];
+        var filterResult = {};
+        var index = 0;
         for (node in elasticBody.hits.hits) {
             var name = elasticBody.hits.hits[node]._source.my_attachment._name;
+            console.log(name);
             if (in_array(userDocuments, name)) {
-                filterResult.push(elasticBody.hits.hits[node]);
+                filterResult[index]= (elasticBody.hits.hits[node]);
+                index++;
+                console.log("add");
             }
         }
-        if (filterResult.length > 0) {
+        if (Object.keys(filterResult).length > 0) {
             res.send(filterResult);          
         } else {
             res.send({
-                error: "No resultat found",
+                error: "No filtered resultat found",
                 code: 1
             });          
         }
