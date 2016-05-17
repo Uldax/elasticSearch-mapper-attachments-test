@@ -1,5 +1,5 @@
 body{
-    background-color: #52E190;
+    background-color: #449d44;
 }
 
 #contentWrap{
@@ -9,7 +9,7 @@ body{
 }
 
 #form{
-    width : 500px;
+    width : 700px;
     height: 300px;
     margin : auto;
     margin-top: 50px;
@@ -31,13 +31,12 @@ body{
 }
 
 #bottomForm{
-    position: absolute;
     display: inline-block;
     width : inherit
 }
 
 #innerForm{
-    width: 400px;
+    width: 600px;
     margin: auto;
 }
 
@@ -51,7 +50,7 @@ body{
 #submitButton{
     float: right;
     background-color: transparent;
-    margin-right: 0%;
+    margin-right: 10%;
     padding-bottom: 15%;
     border: none;
     height: 80px;
@@ -67,5 +66,27 @@ body{
 
 #buttonSearch:active{
     opacity: 0.5;
+}
+
+#advancedResearch{
+    width: inherit;
+    text-align: center;
+    margin-top: 10px;
+}
+
+#buttonAdvancesResearch{
+    width: 50%;
+    text-align: center;
+    margin: auto;
+}
+
+#parametersAdvancedResearch{
+    margin-top: 10px;
+    display: none;
+    
+}
+
+.spaceBetween{
+    margin-right: 30px;
 }
 
