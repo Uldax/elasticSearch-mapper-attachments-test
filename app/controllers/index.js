@@ -8,6 +8,7 @@ var protocol = "http"
 var indexName = "test/person"
 var serverIp = "localhost";
 var baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
+var elastic = require('../helper/elastic.js');
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -32,12 +33,12 @@ router.get('/', function (req, res, next) {
 
 //Ajax endpoint for elastic search
 router.get('/search', function (req, res, next) {
-    var requestString = req.query.search || "";
+    var querryString = req.query.search || "";
     var requestDone = false;
     var dbDone = false;
     var filterCall = false;
     var userAuth = req.query.userAuth || 0;
-    if (userAuth === 0 || requestString==="" ) {
+    if (userAuth === 0 || querryString==="" ) {
         res.send({
             error: "Missing parameters"
         });
@@ -46,21 +47,28 @@ router.get('/search', function (req, res, next) {
     var userDocuments = {};
     var elasticBody = {};
 
-    console.log(requestString + " with authLevel " + userAuth);
+    console.log(querryString + " with authLevel " + userAuth);
 
     var objectRequest = {
+        "_source": "my_attachment._name",
         "query": {
             "match": {
-                "my_attachment.content": requestString
+                "my_attachment.content": querryString
             }
         },
         "highlight": {
             "fields": {
                 "my_attachment.content": {
+                    "fragment_size" : 150, 
+                    "number_of_fragments" : 3   
                 }
             }
         }
     };
+    
+    var objectRequest = elastic.build({
+        requestString : querryString
+    })
 
     //Option for resquest
     var options = {
@@ -164,6 +172,5 @@ function in_array(array, document_name) {
     }
     return false;
 }
-
 
 module.exports = router;

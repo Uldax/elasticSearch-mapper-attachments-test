@@ -1,5 +1,6 @@
-var fs = require('fs')
 var request = require("request");
+var utils = require("./utils.js");
+var mapping = require("./mapping.js")
 //ElasticSearch parameters
 var elasticSearchPort = "9200";
 var protocol = "http"
@@ -23,20 +24,6 @@ var options = {
 var pg = require('pg');
 var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
 
-
-// function to encode file data to base64 encoded string
-function base64_encode(file) {
-    // read binary data
-    var bitmap = fs.readFileSync(file);
-    // convert binary data to base64 encoded string
-    return new Buffer(bitmap).toString('base64');
-}
-
-//Give ramdon number
-function randomIntInc(low, high) {
-    return Math.floor(Math.random() * (high - low + 1) + low);
-}
-
 //Insert doccument read right into pgsql database
 function insertDocumentIntoDB(filename) {
     //Add the pdf in database using client pool
@@ -47,7 +34,7 @@ function insertDocumentIntoDB(filename) {
         client.query("INSERT INTO document(document_name,application_id) values($1, $2) RETURNING document_id;", [filename, 1], function (err, result) {
             if (!err) {
                 var insertedId = result.rows[0].document_id;
-                var readPrivilege = randomIntInc(1, 3);
+                var readPrivilege = utils.randomIntInc(1, 3);
                 client.query("INSERT INTO document_privilege(privilege_id, document_id) values($1, $2)", [readPrivilege, insertedId], function (err, result) {
                     if (!err) {
                         console.log("Insertion into database for " + filename + " : ok");
@@ -72,7 +59,7 @@ function insertDocumentIntoDB(filename) {
 // function to index file in elastic serveur by REST API
 function indexFile(filename) {
     isIndexed(filename).then(function () {
-        var base64file = base64_encode("../" + folderName + "/" + filename);
+        var base64file = utils.base64_encode("../" + folderName + "/" + filename);
         var fileSize = Buffer.byteLength(base64file);
 
         //object depending on elastic mapping    
@@ -81,6 +68,7 @@ function indexFile(filename) {
             "my_attachment": {
                 "_content": base64file,
                 "_name": filename,
+                "_date" : utils.getTodayDateFormat()
             }
         }
         //Add object and content lenght header
@@ -155,19 +143,6 @@ function isIndexed(fileName) {
     });
 }
 
-//Read the file name from folder and index them
-function readFolder(dirname, onError) {
-    fs.readdir(dirname, function (err, filenames) {
-        if (err) {
-            onError(err);
-            return;
-        }
-        filenames.forEach(function (filename) {
-            indexFile(filename);
-        });
-    });
-}
-
 //Function that create index and associate mapping for attachement file
 function createIndex() {
     //Create the index
@@ -176,15 +151,9 @@ function createIndex() {
         url: baseURL + "/test"
     };
     request(options, function (err, response, body) {
-        if (!err && response.statusCode === 200) {
+        if (!err && response.statusCode === 200) {                           
             //Create the mapping
-            var objectMapping = {
-                "person": {
-                    "properties": {
-                        "my_attachment": { "type": "attachment" }
-                    }
-                }
-            }
+            var objectMapping = mapping.fileMapping;
             options = {
                 method: 'PUT',
                 url: baseURL + "/test/person/_mapping",
@@ -197,13 +166,13 @@ function createIndex() {
                 if (!err && response.statusCode === 200) {
                     console.log("Success creation of index");
                 } else {
-                    console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? ");
-                    console.log(err); 
+                    console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? Status code = "+response.statusCode);
+                    console.log(body); 
                 }
             });
         }
         else {
-            console.log("Create index error");
+            console.log("Create index error :");
             console.log(err);
         }
     });
@@ -227,7 +196,11 @@ function cleanALL() {
     });
 
     pg.connect(connectionString, function (err, client, done) {
+        if(err) {
+            return console.error('error fetching client from pool', err);           
+        }
         client.query("DELETE FROM document_privilege", function (err, result) {
+            done();
             if (!err) {
                 console.log("Table Document_privilege delete ");
             } else {
@@ -236,8 +209,7 @@ function cleanALL() {
             }
         });
 
-         client.query("DELETE FROM document", function (err, result) {
-            console.log(done());
+         client.query("DELETE FROM document", function (err, result) {      
             done();
             if (!err) {
                 console.log("Table Document delete ");
@@ -252,14 +224,13 @@ function cleanALL() {
 
 }
 
-
 //Main
 if (process.argv[2] === "clear") {
     console.log("Clean process...");
     cleanALL();
 } else {
     console.log("****** Start crawling ******")
-    readFolder("../" + folderName, function (err) {
+    utils.readFolder("../" + folderName, indexFile, function (err) {
         console.log("Error occured")
         console.log(err);
     });
