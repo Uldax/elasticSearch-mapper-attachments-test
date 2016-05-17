@@ -37,8 +37,11 @@ router.get('/search', function (req, res, next) {
     var dbDone = false;
     var filterCall = false;
     var userAuth = req.query.userAuth || 0;
-    if (userAuth === 0) {
-        res.send("No user Auth given");
+    if (userAuth === 0 || requestString==="" ) {
+        res.send({
+            err: "Missing parameters"
+        });
+        return;
     }
     var userDocuments = {};
     var elasticBody = {};
@@ -110,6 +113,7 @@ router.get('/search', function (req, res, next) {
                     error: "No resultat found",
                     code: 1
                 });
+                return;
             }
         } else {
             if (!err) {
@@ -117,9 +121,11 @@ router.get('/search', function (req, res, next) {
                     error: "request status : " + response.statusCode,
                     code: 2
                 });
+                return;
 
             } else {
                 res.send(err);
+                return;
             }
         }
     });
@@ -133,14 +139,13 @@ router.get('/search', function (req, res, next) {
                 filterResult.push(elasticBody.hits.hits[node]);
             }
         }
-        console.log('call to filter')
         if (filterResult.length > 0) {
-            res.send(filterResult);
+            res.send(filterResult);          
         } else {
             res.send({
                 error: "No resultat found",
                 code: 1
-            });
+            });          
         }
     }
 
