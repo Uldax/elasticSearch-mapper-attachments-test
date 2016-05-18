@@ -45,25 +45,26 @@ function ajaxCall(evt) {
 }
 
 function readAndDisplayData(data) {
-    
+
     $(".result").remove();
+    $(".noResult").remove();
+    $("#resultPanel").hide();
     var myObject = JSON.parse(data);
     var nom = "";
     var text = "";
     if (myObject.hasOwnProperty("error")) {
         console.log(myObject.error);
-        $("#resultPanel").hide();
+        noResult(myObject.error);
+        $("#resultPanel").slideDown(500);
     }
     else {
-        $("#resultPanel").show();
-        
         for (node in myObject) {
             nom = myObject[node]._source.attachment._name;
             text = myObject[node].highlight['attachment.content'][0];
             console.log(myObject[node]._source.attachment._name);
             createItem(nom, text);
         }
-        
+        $("#resultPanel").slideDown(500);
     }
 }
 
@@ -89,20 +90,29 @@ function createItem(nom, text) {
             break;
     }
     var resultText = $("<div class='result-text'></div>");
-    var name = nom.slice(0,16);
+    var name = nom.slice(0, 16);
     name += "...";
-    
+
     var documentTitle = $("<h3>" + name + "</h3>");
     var documentHighlight = $("<p>" + text + "</p>");
-    
+
     resultText.append(documentTitle);
     resultText.append(documentHighlight);
     resultImage.append(imgResult);
     result.append(resultImage);
     result.append(resultText);
     cb.before(result);
-    
 
+
+}
+
+function noResult(text) {
+    var cb = $(".cb");
+    var noResult = $("<div class='noResult'></div>");
+    var textNoResult = $("<h3>" + text + "</h3>");
+    
+    noResult.append(textNoResult);
+    cb.before(noResult);
 }
 
 function getExt(path) {

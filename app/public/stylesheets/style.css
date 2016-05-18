@@ -155,3 +155,7 @@ em{
 h3{
     font-size: 16px;
 }
+
+.noResult > h3 {
+    float: left;
+}
