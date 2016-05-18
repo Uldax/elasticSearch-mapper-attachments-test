@@ -1,28 +1,33 @@
-var request = require("request");
-var utils = require("./utils.js");
-var mapping = require("./mapping.js")
-//ElasticSearch parameters
-var elasticSearchPort = "9200";
-var protocol = "http"
-var indexName = "test/person"
-var serverIp = "localhost";
-var baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
-//Folder parameters
-var folderName = "indexedDocuments";
+//Module
+var request = require("request"),
+    utils = require("./utils.js"),
+    mapping = require("./mapping.js"),
+    pg = require('pg');
+
+//Conf parameters
+var elasticSearchPort = "9200",
+    protocol = "http",
+    indexName = "opus",
+    typeName = "document",
+    serverIp = "localhost",
+    folderName = "indexedDocuments",
+    connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
+
+//ShortCut
+var elasticPath = indexName + "/" + typeName,
+    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
 
 //Option for resquest
 var options = {
     method: 'POST',
-    url: baseURL + "/" + indexName + "/",
+    url: baseURL + "/" + elasticPath + "/",
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Transfer-Encoding': 'chunked'
     }
 };
 
-
-var pg = require('pg');
-var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
+console.log(options.url);
 
 //Insert doccument read right into pgsql database
 function insertDocumentIntoDB(filename) {
@@ -38,7 +43,7 @@ function insertDocumentIntoDB(filename) {
                 client.query("INSERT INTO document_privilege(privilege_id, document_id) values($1, $2)", [readPrivilege, insertedId], function (err, result) {
                     if (!err) {
                         console.log("Insertion into database for " + filename + " : ok");
-                    } else{
+                    } else {
                         console.log(err);
                     }
                     done();
@@ -61,15 +66,16 @@ function indexFile(filename) {
     isIndexed(filename).then(function () {
         var base64file = utils.base64_encode("../" + folderName + "/" + filename);
         var fileSize = Buffer.byteLength(base64file);
-
         //object depending on elastic mapping    
         //TODO add more metadata             
         var requestData = {
-            "my_attachment": {
+            "attachment": {
                 "_content": base64file,
                 "_name": filename,
-                "_date" : utils.getTodayDateFormat()
-            }
+                "_date": utils.getTodayDateFormat(),
+                "_content_length": fileSize
+            },
+            "document_type" : utils.getType(filename)
         }
         //Add object and content lenght header
         options.json = requestData;
@@ -109,10 +115,10 @@ function indexFile(filename) {
 function isIndexed(fileName) {
     return new Promise(function (resolve, reject) {
         var objectRequest = {
-            "fields": ["my_attachment.name"],
+            "fields": ["attachment.name"],
             "query": {
                 "match_phrase": {
-                    "my_attachment.name": fileName
+                    "attachment.name": fileName
                 }
             }
         };
@@ -137,7 +143,11 @@ function isIndexed(fileName) {
                 if (response.statusCode === 400) {
                     reject('Bad Request');
                 }
-                reject(err);
+                if (err) {
+                    reject(err);
+                } else {
+                    reject(body);
+                }
             }
         });
     });
@@ -148,15 +158,15 @@ function createIndex() {
     //Create the index
     var options = {
         method: 'PUT',
-        url: baseURL + "/test"
+        url: baseURL + "/" + indexName
     };
     request(options, function (err, response, body) {
-        if (!err && response.statusCode === 200) {                           
+        if (!err && response.statusCode === 200) {
             //Create the mapping
             var objectMapping = mapping.fileMapping;
             options = {
                 method: 'PUT',
-                url: baseURL + "/test/person/_mapping",
+                url: baseURL + "/" + elasticPath + "/_mapping",
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
@@ -166,14 +176,18 @@ function createIndex() {
                 if (!err && response.statusCode === 200) {
                     console.log("Success creation of index");
                 } else {
-                    console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? Status code = "+response.statusCode);
-                    console.log(body); 
+                    console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? Status code = " + response.statusCode);
+                    console.log(body);
                 }
             });
         }
         else {
             console.log("Create index error :");
-            console.log(err);
+            if (err) {
+                console.log(err);
+            } else {
+                console.log(body);
+            }
         }
     });
 }
@@ -183,21 +197,21 @@ function cleanALL() {
     //Option for resquest
     var options = {
         method: 'DELETE',
-        url: baseURL + "/test"
+        url: baseURL + "/" + indexName
     };
 
     request(options, function (err, response, body) {
         if (!err && response.statusCode === 200) {
-            createIndex();
+            console.log("index delete with success");
         } else {
             console.log("Error in delete index");
-            console.log(err);
+            console.log(body);
         }
     });
 
     pg.connect(connectionString, function (err, client, done) {
-        if(err) {
-            return console.error('error fetching client from pool', err);           
+        if (err) {
+            return console.error('error fetching client from pool', err);
         }
         client.query("DELETE FROM document_privilege", function (err, result) {
             done();
@@ -209,7 +223,7 @@ function cleanALL() {
             }
         });
 
-         client.query("DELETE FROM document", function (err, result) {      
+        client.query("DELETE FROM document", function (err, result) {
             done();
             if (!err) {
                 console.log("Table Document delete ");
@@ -217,18 +231,20 @@ function cleanALL() {
                 console.log("Error in delete2");
                 console.log(err);
             }
-          
         });
     });
-
-
 }
 
 //Main
 if (process.argv[2] === "clear") {
     console.log("Clean process...");
     cleanALL();
-} else {
+}
+else if (process.argv[2] === "create") {
+    console.log("Create index...");
+    createIndex();
+}
+else {
     console.log("****** Start crawling ******")
     utils.readFolder("../" + folderName, indexFile, function (err) {
         console.log("Error occured")

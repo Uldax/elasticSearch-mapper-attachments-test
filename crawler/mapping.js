@@ -1,9 +1,10 @@
 var mapping = {
     fileMapping: {
-        "person": {
+        "document": {
             "properties": {
-                "my_attachment": {
+                "attachment": {
                     "type": "attachment",
+                    //Add index -1 pour tout indexer
                     "fields": {
                         "content": {
                             "type": "string",
@@ -17,15 +18,21 @@ var mapping = {
                             "type": "date",
                             "format": "yyyy-MM-dd"
                         },
-                        "name": { "store": "yes" },
+                        "name": { 
+                            "store": "yes",
+                            "index_analyzer": "simple"
+                        },
                         //"author" : {"analyzer" : "myAnalyzer"},
                         "keywords": { "store": "yes" },
                         "content_type": { "store": "yes" },
                         "content_length": { "store": "yes" },
                         "language": { "store": "yes" }
                     }
-                }
-                ///Custum here
+                },
+                 ///Custum here
+                "document_type" :{
+                    "type" : "string"
+                }              
             }
         }
     }
