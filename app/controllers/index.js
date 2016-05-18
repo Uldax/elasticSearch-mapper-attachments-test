@@ -5,7 +5,7 @@ var pg = require('pg');
 var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
 var elasticSearchPort = "9200";
 var protocol = "http"
-var indexName = "test/person"
+var indexName = "opus/document"
 var serverIp = "localhost";
 var baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
 var elastic = require('../helper/elastic.js');
@@ -50,15 +50,15 @@ router.get('/search', function (req, res, next) {
     console.log(querryString + " with authLevel " + userAuth);
 
     var objectRequest = {
-        "_source": "my_attachment._name",
+        "_source": "attachment._name",
         "query": {
             "match": {
-                "my_attachment.content": querryString
+                "attachment.content": querryString
             }
         },
         "highlight": {
             "fields": {
-                "my_attachment.content": {
+                "attachment.content": {
                     "fragment_size" : 150, 
                     "number_of_fragments" : 3   
                 }
@@ -143,7 +143,7 @@ router.get('/search', function (req, res, next) {
         var filterResult = {};
         var index = 0;
         for (node in elasticBody.hits.hits) {
-            var name = elasticBody.hits.hits[node]._source.my_attachment._name;
+            var name = elasticBody.hits.hits[node]._source.attachment._name;
             console.log(name);
             if (in_array(userDocuments, name)) {
                 filterResult[index]= (elasticBody.hits.hits[node]);

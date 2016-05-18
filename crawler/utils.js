@@ -60,7 +60,7 @@ var utils = {
         var ext = this.getExt(path);
         if( ext !== "" && this.extToType.hasOwnProperty(ext)){
             return this.extToType[ext];
-        } else return "unknow"
+        } else return "unknown"
     }
 }
 

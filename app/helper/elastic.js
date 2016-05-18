@@ -1,10 +1,3 @@
-//Pour trie date
-// "range" : {
-//     "date" : {
-//         "gte" : "now-1d/d",
-//         "lt" :  "now/d"
-//     }
-// }    
 //TODO : add date , exact , type  
 
 const EXACT_WORD = 1
@@ -76,17 +69,17 @@ var elasticBuilder = {
     base: function () {
         return {
             //Source filtering
-            "_source": "my_attachment._name",
+            "_source": "attachment._name",
             //“How well does this document match this query clause?” the query clause also calculates a _score
             "query": {
                 "match": {
-                    "my_attachment.content": elasticBuilder.buildParam.requestString
+                    "attachment.content": elasticBuilder.buildParam.requestString
                 }
                 //Filter :  “Does this document match this query clause?”  — no scores are calculated. Filter context is mostly used for filtering structured data, e.g.
             },
             "highlight": {
                 "fields": {
-                    "my_attachment.content": {
+                    "attachment.content": {
                         "fragment_size": 150,
                         "number_of_fragments": 3
                     }
@@ -106,17 +99,17 @@ var elasticBuilder = {
                 break;
             case DATE_ASC:
                 orderByBuild.push({
-                    "my_attachment.content._date": { "order": "asc" }
+                    "attachment.content._date": { "order": "asc" }
                 })
                 break;
             case DATE_DESC:
                 orderByBuild.push({
-                    "my_attachment.content._date": { "order": "desc" }
+                    "attachment.content._date": { "order": "desc" }
                 })
                 break;
             case ALPHABETICAL:
                 orderByBuild.push({
-                    "my_attachment.content._name": { "order": "asc" }
+                    ".content._name": { "order": "asc" }
                 })
                 break;
 
@@ -124,9 +117,17 @@ var elasticBuilder = {
                 break;
         }
         elasticBuilder.objectBuild.sort = orderByBuild;
+        return;
     },
 
     date: function () {
+        elasticBuilder.objectBuild.range = {
+            "attachment.content._date": {
+                "gte": elasticBuilder.objectParam.date.begin,
+                "lt": elasticBuilder.objectParam.date.end
+            }
+        }
+        return;
 
     },
 
