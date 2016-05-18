@@ -9,7 +9,7 @@ body{
 }
 
 #form{
-    width : 700px;
+    width : 900px;
     height: 300px;
     margin : auto;
     margin-top: 50px;
@@ -90,3 +90,68 @@ body{
     margin-right: 30px;
 }
 
+#resultPanel{
+    width : 900px;
+    margin : auto;
+    margin-top: 10px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: black;
+    border-radius: 10px;
+    background-color: white;
+    position: relative;
+    text-align: center;
+    padding-left: 70px;
+}
+
+.result{ 
+    float: left;
+    width: 200px;
+    height: 290px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: black;
+    border-radius: 10px;
+    margin: 25px;
+    text-align: center;
+}
+
+.result-image{
+    padding-top: 5px;
+    padding-bottom: 8px;
+    border-bottom: solid 1px black;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    
+}
+
+.red{
+    background-color: #D14841;
+}
+
+.blue{
+    background-color: #54ACD2;
+}
+
+.green{
+    background-color: #61BD6D;
+}
+
+
+.imgResult{
+    height: 60px;
+    width: 60px;
+}
+
+.cb {
+    clear: both;
+}
+
+em{
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+h3{
+    font-size: 16px;
+}

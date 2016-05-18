@@ -1,4 +1,5 @@
 $(document).ready(function(){
+    $("#resultPanel").hide();
     $('#buttonAdvancedResearch').click(function(evt){
         evt.preventDefault();
         var toHideAndShow = $('#parametersAdvancedResearch');
