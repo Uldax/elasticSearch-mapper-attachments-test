@@ -5,6 +5,7 @@
   "dependencies": {
     "exif-parser": "^0.1.9",
     "pg": "^4.5.5",
+    "pg-promise": "^4.2.5",
     "request": "^2.67.0"
   }
 }

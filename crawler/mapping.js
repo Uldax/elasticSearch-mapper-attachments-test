@@ -32,7 +32,8 @@ var mapping = {
                  ///Custum here
                 "document_type" :{
                     "type" : "string"
-                }              
+                },
+                //"id_document" versionID            
             }
         }
     }

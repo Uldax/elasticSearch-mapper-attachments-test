@@ -1,5 +1,6 @@
 var express = require('express');
 var request = require("request");
+var elasticService = require("./../helper/elasticService");
 var router = express.Router();
 var pg = require('pg');
 var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
@@ -8,7 +9,8 @@ var protocol = "http"
 var indexName = "opus/document"
 var serverIp = "localhost";
 var baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
-var elastic = require('../helper/elastic.js');
+var elastic = require('../helper/elasticBuilder.js');
+
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -32,111 +34,49 @@ router.get('/', function (req, res, next) {
 });
 
 //Ajax endpoint for elastic search
-router.get('/search', function (req, res, next) {
-    var querryString = req.query.search || "";
+router.post('/search', function (req, res, next) {
+    var querryString = req.body.requestString || "";
     var requestDone = false;
     var dbDone = false;
     var filterCall = false;
-    var userAuth = req.query.userAuth || 0;
-    if (userAuth === 0 || querryString==="" ) {
+    var userAuth = req.body.userAuth || 0;
+    if (userAuth === 0 || querryString === "") {
         res.send({
-            error: "Missing parameters"
+            error: "Missing base parameters"
         });
         return;
     }
-    var userDocuments = {};
-    var elasticBody = {};
-
     console.log(querryString + " with authLevel " + userAuth);
+    elasticService.search(req.body)
+        .then(function (result) {
+            res.send(result);
+            //get read access for user
+            // pg.connect(connectionString, function (err, client, done) {
+            //     if (err) {
+            //         return console.error('error fetching client from pool', err);
+            //     }
+            //     client.query("SELECT document_name FROM public.document_privilege INNER JOIN document ON document_privilege.document_id = document.document_id WHERE privilege_id = $1 ", [userAuth], function (err, result) {
+            //         if (!err) {
+            //             done();
+            //             userDocuments = result.rows;
+            //             //console.log(userDocuments);
+            //             dbDone = true;
+            //             if (!filterCall) {
+            //                 filterOutput();
+            //             }
+            //         } else {
+            //             console.log("error");
+            //             console.log(err);
+            //             //call `done()` to release the client back to the pool       
 
-    var objectRequest = {
-        "_source": "attachment._name",
-        "query": {
-            "match": {
-                "attachment.content": querryString
-            }
-        },
-        "highlight": {
-            "fields": {
-                "attachment.content": {
-                    "fragment_size" : 150, 
-                    "number_of_fragments" : 3   
-                }
-            }
-        }
-    };
-    
-    var objectRequest = elastic.build({
-        requestString : querryString
-    })
-
-    //Option for resquest
-    var options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        json: objectRequest,
-        url: baseURL + "/" + indexName + "/_search"
-    };
-
-
-    //get read access for user
-    pg.connect(connectionString, function (err, client, done) {
-        if (err) {
-            return console.error('error fetching client from pool', err);
-        }
-        client.query("SELECT document_name FROM public.document_privilege INNER JOIN document ON document_privilege.document_id = document.document_id WHERE privilege_id = $1 ", [userAuth], function (err, result) {
-            if (!err) {
-                done();
-                userDocuments = result.rows;
-                console.log(userDocuments);
-                dbDone = true;
-                if (requestDone && !filterCall) {
-                    filterOutput();
-                }
-            } else {
-                console.log("error");
-                console.log(err);
-                //call `done()` to release the client back to the pool       
-
-            }
-            done();
-        });
-    });
-
-    request(options, function (err, response, body) {
-        console.log("request send");
-        console.log(response.statusCode);
-        if (!err && response.statusCode === 200) {
-            if (body.hits.total != 0) {
-                elasticBody = body;
-                //hits.hits.node._source.my_attchement._name
-                requestDone = true;
-                if (dbDone && !filterCall) {
-                    filterOutput();
-                }
-            } else {
-                res.send({
-                    error: "No resultat found",
-                    code: 1
-                });
-                return;
-            }
-        } else {
-            if (!err) {
-                res.send({
-                    error: "request status : " + response.statusCode,
-                    code: 2
-                });
-                return;
-
-            } else {
-                res.send(err);
-                return;
-            }
-        }
-    });
+            //         }
+            //         done();
+            //     });
+            // });
+        }).catch(function (err) {
+            res.send(err.message || err);
+            return null;
+        })
 
     function filterOutput() {
         filterCall = true;
@@ -146,18 +86,18 @@ router.get('/search', function (req, res, next) {
             var name = elasticBody.hits.hits[node]._source.attachment._name;
             console.log(name);
             if (in_array(userDocuments, name)) {
-                filterResult[index]= (elasticBody.hits.hits[node]);
+                filterResult[index] = (elasticBody.hits.hits[node]);
                 index++;
                 console.log("add");
             }
         }
         if (Object.keys(filterResult).length > 0) {
-            res.send(filterResult);          
+            res.send(filterResult);
         } else {
             res.send({
                 error: "No filtered resultat found",
                 code: 1
-            });          
+            });
         }
     }
 
