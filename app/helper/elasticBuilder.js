@@ -23,6 +23,9 @@ const USET_AUTH_FIELD = "userAuth";
 
 
 var utils = require("./utils");
+var ejs = require('./elastic');
+
+var folderName = "indexedDocuments";
 
 /*
 Param{
@@ -37,77 +40,76 @@ Param{
     }
 }
 */
+
 var elasticBuilder = {
-    objectBuild: {},
+    bodySearch: {},
     //List of console log
     consoleStatus: {},
     //List of param for builder
     buildParam: {},
+    querrySet: false,
 
     publicObject: {
         //parse buildParam  
-        get: function (reqBody) {
+        search: function (reqBody) {
             //console.log(reqBody);
             elasticBuilder.buildParam = reqBody;
             //Basic research 
             if (reqBody.hasOwnProperty(REQUEST_STRING_FIELD) && reqBody.requestString !== "") {
-                elasticBuilder.objectBuild = elasticBuilder.base();
-            } else {
-                elasticBuilder.consoleStatus.orderBy = 'No querry string';
-            }
+                elasticBuilder.bodySearch = elasticBuilder.base();
 
-            //OrderBy 
-            if (reqBody.hasOwnProperty(ORDER_BY_FIELD) && reqBody.orderBy !== "") {
-                elasticBuilder.orderBy();
-            } else {
-                elasticBuilder.consoleStatus.orderBy = 'false';
-            }
-            //Date 
-            if (reqBody.hasOwnProperty(DATE_FIELD) && reqBody.date.hasOwnProperty(DATE_BEGIN) && reqBody.date.hasOwnProperty(DATE_END)) {
-                elasticBuilder.date();
-            } else {
-                elasticBuilder.consoleStatus.date = 'false';
-            }
-            //Exact value 
-            if (reqBody.hasOwnProperty('exact') && reqBody.orderBy == EXACT_WORD) {
-                elasticBuilder.exact();
-            } else {
-                elasticBuilder.consoleStatus.exact = 'false';
-            }
-            //Doc type 
-            if (reqBody.hasOwnProperty('doctype') && reqBody.orderBy !== "") {
-                elasticBuilder.doctype();
-            } else {
-                elasticBuilder.consoleStatus.exact = 'false';
-            }
-            console.log(elasticBuilder.consoleStatus)
-            return elasticBuilder.objectBuild;
-        },
-
-        //TODO : gulp or unique
-        update: function (row) {
-            //POST /website/blog/1/_update
-            var test = {
-                "doc": {
-                    "tags": ["testing"],
-                    "views": 0
+                //Date 
+                if (reqBody.hasOwnProperty(DATE_FIELD) && reqBody.date.hasOwnProperty(DATE_BEGIN) && reqBody.date.hasOwnProperty(DATE_END)) {
+                    elasticBuilder.date();
+                } else {
+                    elasticBuilder.consoleStatus.date = 'false';
                 }
+                //OrderBy 
+                if (reqBody.hasOwnProperty(ORDER_BY_FIELD) && reqBody.orderBy !== "") {
+                    elasticBuilder.orderBy();
+                } else {
+                    elasticBuilder.consoleStatus.orderBy = 'false';
+                }
+                //Exact value 
+                if (reqBody.hasOwnProperty('exact') && reqBody.orderBy == EXACT_WORD) {
+                    elasticBuilder.exact();
+                } else {
+                    elasticBuilder.consoleStatus.exact = 'false';
+                }
+                //Doc type 
+                if (reqBody.hasOwnProperty('doctype') && reqBody.orderBy !== "") {
+                    elasticBuilder.doctype();
+                } else {
+                    elasticBuilder.consoleStatus.exact = 'false';
+                }
+
+                //Normal 
+                if (!elasticBuilder.querrySet) {
+                    console.log("je passe par la");
+                    elasticBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]))
+                }
+                return elasticBuilder.bodySearch;
+            } else {
+                throw Error("No request string provided")
             }
         },
 
-        createDocument: function (filename, base64file) {
+        createDocument: function (fileName) {
+            var base64file = utils.base64_encode("../" + folderName + "/" + fileName);
+            var fileSize = Buffer.byteLength(base64file);
             //id is set in url sent to elastic : http POST elastic/index/type/id
             var requestData = {
                 "attachment": {
                     "_content": base64file,
-                    "_name": filename,
-                    "_date": utils.getTodayDateFormat(),
-                    "_content_length": Buffer.byteLength(base64file)
+                    "_name": fileName,
+                    "_content_length": fileSize
                 },
-                "document_type": utils.getType(filename)
+                "document_type": utils.getType(fileName),
+                "insertDate": utils.getTodayDateFormat()
             }
             return requestData;
         },
+
 
         //TODO
         delete: function (row) {
@@ -115,27 +117,11 @@ var elasticBuilder = {
         }
     },
 
+    //Set field to retrive and highlight
     base: function () {
-        return {
-            //Source filtering
-            "_source": ["attachment._name", "attachment._date"],
-            //“How well does this document match this query clause?” the query clause also calculates a _score
-            "query": {
-                "match": {
-                    "attachment.content": elasticBuilder.buildParam.requestString
-                }
-                //Filter :  “Does this document match this query clause?”  — no scores are calculated. Filter context is mostly used for filtering structured data, e.g.
-            },
-            "highlight": {
-                "fields": {
-                    "attachment.content": {
-                        //todo change fragment size
-                        "fragment_size": 150,
-                        "number_of_fragments": 3
-                    }
-                }
-            }
-        };
+        return ejs.Request()
+            .source(["attachment._name", "attachment._date"])
+            .highlight(ejs.Highlight("attachment.content").numberOfFragments(3))
     },
 
     //Pertinance, alphabétique , date croissante , date decroissante
@@ -170,12 +156,16 @@ var elasticBuilder = {
     },
 
     date: function () {
-        elasticBuilder.objectBuild.range = {
-            "attachment.content._date": {
-                "gte": elasticBuilder.buildParam.date.begin,
-                "lt": elasticBuilder.buildParam.date.end
-            }
-        }
+        elasticBuilder.bodySearch
+            .query(
+            ejs.FilteredQuery(
+                ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]),
+                ejs.RangeFilter('insertDate')
+                    .gte(elasticBuilder.buildParam[DATE_FIELD][DATE_BEGIN])
+                    .lte(elasticBuilder.buildParam[DATE_FIELD][DATE_END])
+            )
+            )
+        elasticBuilder.querrySet = true;
     },
 
     doctype: function () {

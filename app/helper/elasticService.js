@@ -1,6 +1,7 @@
 //Classe that consume builder to perform request to elastic serveur
 var request = require("request"),
     utils = require("./utils");
+
 //Conf parameters
 var elasticSearchPort = "9200",
     protocol = "http",
@@ -15,114 +16,108 @@ var elasticPath = indexName + "/" + typeName,
     folderName = "indexedDocuments",
     elasticBuilder = require("./elasticBuilder");
 
-//General option for resquest
 
-var baseOptions = {
-    method: 'POST',
-    url: baseURL + "/" + elasticPath + "/",
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Transfer-Encoding': 'chunked'
+var elasticsearch = require('elasticsearch');
+var ejs = require('./elastic');
+var client = new elasticsearch.Client({
+    host: serverIp + ":" + elasticSearchPort,
+    log: 'trace'
+});
+
+
+
+//var pageNum = request.params.page;
+//var perPage = request.params.per_page;
+
+client.ping({
+    requestTimeout: 30000,
+    // undocumented params are appended to the query string
+    hello: "elasticsearch"
+}, function (error) {
+    if (error) {
+        console.error('elasticsearch cluster is down!');
+    } else {
+        console.log('All is well');
     }
-};
+});
 
 var elasticService = {
     //Index document into elastic 
+    // Warning old version
     //Return Promise
     createDocument: function (row) {
         var fileName = row.document_name;
         return new Promise(function (resolve, reject) {
-            var base64file = utils.base64_encode("../" + folderName + "/" + fileName);
-            var fileSize = Buffer.byteLength(base64file);
-            var requestData = elasticBuilder.createDocument(fileName, base64file);
-            //Copy base option
-            var options = baseOptions;
-            options.json = requestData;
-            //here ad version id
+            var requestData = elasticBuilder.createDocument(fileName);
             var versionID = row.update_id;
-            options.url += versionID;
-            var fileSize = Buffer.byteLength(base64file);
-            options.headers["Content-Length"] = fileSize;
-
-            //index file
-            request(options, function (err, response, body) {
-                if (!err) {
-                    if (response.statusCode === 201 || response.statusCode === 200) {
-                        if (typeof body != undefined) {
-                            resolve("Indexation of " + fileName + " :" + body.created + " Status " + response.statusCode);
-                        }
-                    } else {
-                        reject('Error with status code : ' + response.statusCode);
-                    }
-                } else {
-                    if (err.code == "ECONNRESET" && fileSize > 104857600) {
-                        reject("Connexion reset : " + fileName + " content length exceeded 104857600 bytes " + "(" + fileSize + ")");
-                    }
-                    else reject(body);
-                }
+            client.create({
+                index: indexName,
+                type: 'document',
+                id: versionID,
+                body: requestData
+            }).then(function (resp) {
+                resolve("Document with " + versionID + " insert");
+            }, function (err) {
+                reject(err.message);
             });
+            //! fileSize > 104857600      
         });
     },
 
+
     updateDocument: function (row) {
+        //Get info from db 
+        // format body
+        var versionID = row.update_id;
+        var options = Object.assign({}, baseOptions);
+        client.update({
+            index: indexName,
+            type: 'document',
+            id: versionID,
+            body: {
+                // put the partial document under the `doc` key
+                doc: {
+                    title: 'Updated'
+                }
+            }
+        }).then(function (resp) {
+            console.trace("Document with " + versionID + " delete");
+        }, function (err) {
+            console.trace(err.message);
+        });
 
     },
 
-
+    //With api
     deleteDocument: function (row) {
-
+        var versionID = row.update_id;
+        var options = Object.assign({}, baseOptions);
+        client.delete({
+            index: indexName,
+            type: 'document',
+            id: versionID
+        }).then(function (resp) {
+            console.trace("Document with " + versionID + " delete");
+        }, function (err) {
+            console.trace(err.message);
+        });
     },
 
 
     search: function (buildOption) {
+        //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
         return new Promise(function (resolve, reject) {
-            //Get the json from builder
-            var objectRequest = elasticBuilder.get(buildOption);
-            console.log(objectRequest);
-            //Option for resquest
-            var options = baseOptions;
-            options.json = objectRequest;
-            options.url = baseURL + "/" + indexName + "/_search";
-            //GetDocument readable here
-            //then request
-            elasticService.sendRequest(options)
-                .then(function (result) {
-                    console.log("result return");
-                    resolve(result);
-                })
-                .catch(function(err){
-                    reject(err);
-                })
-        })
-
-    },
-
-    sendRequest: function (options) {
-        return new Promise(function (resolve, reject) {
-            request(options, function (err, response, body) {
-                //Check for request error
-                if (!err) {
-                    //Check for elastic error
-                    if (body.hasOwnProperty("error")) {
-                        reject({
-                            error: body.error,
-                            code: 3
-                        });
-                    } else {
-                        resolve(body)
-                    }
-                } else {
-                    reject({
-                        error: err,
-                        message: "Request status : " + response.statusCode,
-                        code: 2
-                    });
-                }
+            var objectRequest = elasticBuilder.search(buildOption);
+            client.search({
+                index: indexName,
+                body: objectRequest
+            }).then(function (resp) {
+                resolve(resp);
+            }, function (err) {
+                reject(err);
             });
-
         });
-
-    }
+    },
 }
 
 

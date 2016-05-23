@@ -14,11 +14,11 @@ var mapping = {
                         //Metadata supported
                         "title": { "store": "yes" },
                         "date": {
-                            "store": "yes",
+                            //"store": "yes",
                             "type": "date",
-                            "format": "yyyy-MM-dd"
+                            "format": "dd/MM/yyyy"
                         },
-                        "name": { 
+                        "name": {
                             "store": "yes",
                             "index_analyzer": "simple"
                         },
@@ -29,10 +29,15 @@ var mapping = {
                         "language": { "store": "yes" }
                     }
                 },
-                 ///Custum here
-                "document_type" :{
-                    "type" : "string"
+                ///Custum here
+                "document_type": {
+                    "type": "string"
                 },
+                "insertDate": {
+                    //"store": "yes",
+                    "type": "date",
+                    "format": "dd/MM/yyyy"
+                }
                 //"id_document" versionID            
             }
         }

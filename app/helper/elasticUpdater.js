@@ -8,6 +8,7 @@ var elasticUpdater = {
 
     //on startup read for any unretrieved references that occurred during downtime
     //and update elastic
+    //For babillard , use bulk
     start: function () {
         console.log("get downtime update...");
         db.any("SELECT update_id,op,document_name FROM public.update INNER JOIN document ON public.update.update_id = document.document_id ")
