@@ -21,7 +21,7 @@ var elasticsearch = require('elasticsearch');
 var ejs = require('./elastic');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'trace'
+    log: 'error'
 });
 
 

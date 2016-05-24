@@ -83,5 +83,6 @@ function bulletinBoard(data) {
 
 }
 
+
 module.exports = elasticUpdater;
 
