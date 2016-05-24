@@ -215,7 +215,7 @@ function cleanALL() {
         // this.ctx = transaction config + state context;
         return t.batch([
             t.none("DELETE FROM document_privilege"),
-            t.none("DROP TRIGGER account_change_trigger ON document"),
+            t.none("DROP TRIGGER IF EXISTS account_change_trigger ON document"),
             t.none("DELETE FROM public.update"),
             t.none("DELETE FROM document"),
             t.none("CREATE TRIGGER account_change_trigger " + 

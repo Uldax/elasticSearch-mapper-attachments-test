@@ -28,19 +28,6 @@ var client = new elasticsearch.Client({
 
 //var pageNum = request.params.page;
 //var perPage = request.params.per_page;
-
-client.ping({
-    requestTimeout: 30000,
-    // undocumented params are appended to the query string
-    hello: "elasticsearch"
-}, function (error) {
-    if (error) {
-        console.error('elasticsearch cluster is down!');
-    } else {
-        console.log('All is well');
-    }
-});
-
 var elasticService = {
     //Index document into elastic 
     // Warning old version
