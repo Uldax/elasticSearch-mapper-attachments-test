@@ -1,14 +1,16 @@
 //Class that build request to send to elastic search serveur
 
 //TODO : add date , exact , type  
-const EXACT_WORD = 1
+const ALL_RESULTS = 0;
+const EXACT_WORD = 1;
+const RELEVANCE = 0;
+const ALPHABETICAL = 1;
 const DATE_ASC = 2;
 const DATE_DESC = 3;
-const ALPHABETICAL = 4;
-const RELEVANCE = 5;
-const PDF = "pdf"
-const DOC = "docx"
-const BULLETIN_BOARD = "unknown"
+const PDF = "pdf";
+const DOC = "docx";
+const BULLETIN_BOARD = "unknown";
+const ALL_DOCUMENT_TYPES = "allTypes";
 
 const ALLOWED_TYPE = [PDF, DOC, BULLETIN_BOARD];
 

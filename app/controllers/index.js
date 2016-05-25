@@ -35,6 +35,7 @@ router.get('/', function (req, res, next) {
 
 //Ajax endpoint for elastic search
 router.post('/search', function (req, res, next) {
+    console.log(req.body);
     var querryString = req.body.requestString || "";
     var requestDone = false;
     var dbDone = false;

@@ -11,7 +11,7 @@ var extToType = {
 };
 
 //set eventlidtener onclick call function 
-buttonSearch.addEventListener("click", ajaxCall);
+buttonSearch.addEventListener("click", postCall);
 
 function ajaxCall(evt) {
     evt.preventDefault();
@@ -44,23 +44,40 @@ function ajaxCall(evt) {
 
 }
 
-function postCall() {
-    $.post("/search"
-        , { requestString: $("#inputSearch").value, userAuth: $("#inputSearch").value }
-        , function (data) {
-            $(".result").html(data);
-        })
-        .fail(function () {
-            alert("error");
-        })
+function postCall(evt) {
+    evt.preventDefault();
+    //  $.post("/search"
+    //      , { 'requestString': $("#inputSearch").value, 'userAuth': $("#userPrivilege").value }
+    //      , function (data) {
+    //          console.log(data);
+    //          readAndDisplayData(data);
+    //      })
+    //     .fail(function () {
+    //         alert("error");
+    //     })
+    var myObject = { requestString: $("#inputSearch")[0].value , userAuth: $("#userPrivilege")[0].value };
+    console.log(myObject);
+    $.ajax({
+        url: '/search',
+        type: 'POST',
+        data: myObject,
+        complete: function (resultat, statut) {
+            console.log(resultat);
+            readAndDisplayData(resultat.responseJSON);
+        },
+
+        error: function (resultat, statut, erreur) {
+            console.log(erreur);
+        }
+    })
 }
 
-function readAndDisplayData(data) {
+function readAndDisplayDataFiltre(data) {
 
     $(".result").remove();
     $(".noResult").remove();
     $("#resultPanel").hide();
-    var myObject = JSON.parse(data);
+    var myObject = data;
     var nom = "";
     var text = "";
     if (myObject.hasOwnProperty("error")) {
@@ -77,6 +94,31 @@ function readAndDisplayData(data) {
         }
         $("#resultPanel").slideDown(500);
     }
+}
+
+function readAndDisplayData(data) {
+
+    $(".result").remove();
+    $(".noResult").remove();
+    $("#resultPanel").hide();
+    var myObject = data;
+    var nom = "";
+    var text = "";
+    if (myObject.hasOwnProperty("error")) {
+        console.log(myObject.error);
+        noResult(myObject.error);
+        $("#resultPanel").slideDown(500);
+    }
+    else {
+        for (node in myObject.hits.hits) {
+            nom = myObject.hits.hits[node]._source.attachment._name;
+            text = myObject.hits.hits[node].highlight['attachment.content'][0];
+            console.log(myObject.hits.hits[node]._source.attachment._name);
+            createItem(nom, text);
+        }
+        $("#resultPanel").slideDown(500);
+    }
+    console.log($("#inputSearch")[0].value);
 }
 
 function createItem(nom, text) {

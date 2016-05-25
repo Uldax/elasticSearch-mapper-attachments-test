@@ -27,20 +27,23 @@ body
                         button#buttonAdvancedResearch(class="btn btn-success") Advanced Research
                         #parametersAdvancedResearch
                             select#filterResults(class="spaceBetween")
-                                option(value="allResults") All Results
-                                option(value="exactWords") Exact Words
+                                option(value=0) All Results
+                                option(value=1) Exact Words
                             select#typePreference(class="spaceBetween")
                                 option(value="allTypes") All Types
-                                option(value="babillard") Bulletin Board
+                                option(value="unknown") Bulletin Board
                                 option(value="pdf") PDF
                                 option(value="docx") DOCX
                             label Order by
                             select#orderPreference(class="spaceBetween")
-                                option(value="relevance") Relevance
-                                option(value="alphabetical") Alphabetical
+                                option(value=0) Relevance
+                                option(value=1) Alphabetical
+                                option(value=2) Date Asc
+                                option(value=6) Date Desc
                             select#datePreference(class="spaceBetween")
                                 option(value="allDate") All Dates
                                 option(value="custom") Custom
+                            
         #resultPanel
             //- .result
             //-     .result-image.red
