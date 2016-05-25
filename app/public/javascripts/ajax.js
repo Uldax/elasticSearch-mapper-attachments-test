@@ -44,6 +44,17 @@ function ajaxCall(evt) {
 
 }
 
+function postCall() {
+    $.post("/search"
+        , { requestString: $("#inputSearch").value, userAuth: $("#inputSearch").value }
+        , function (data) {
+            $(".result").html(data);
+        })
+        .fail(function () {
+            alert("error");
+        })
+}
+
 function readAndDisplayData(data) {
 
     $(".result").remove();
@@ -110,7 +121,7 @@ function noResult(text) {
     var cb = $(".cb");
     var noResult = $("<div class='noResult'></div>");
     var textNoResult = $("<h3>" + text + "</h3>");
-    
+
     noResult.append(textNoResult);
     cb.before(noResult);
 }

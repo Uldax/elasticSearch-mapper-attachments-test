@@ -8,25 +8,36 @@ $BODY$
 DECLARE
     opcode CHAR;
 BEGIN
-
     IF TG_OP = 'DELETE' OR TG_OP = 'TRUNCATE' THEN
-       opcode := 'D';
+        opcode := 'D';
+        IF EXISTS (SELECT 1 FROM public.update WHERE update_id = OLD.document_id) THEN
+            UPDATE public.update SET op=opcode, updated=now() WHERE update_id=OLD.document_id;
+        ELSE
+            INSERT INTO public.update (update_id, op, updated) VALUES (OLD.document_id, opcode, now());
+        END IF;
+        -- Notify that the account table has been updated    
+        PERFORM pg_notify('file_watcher',json_build_object('table', TG_TABLE_NAME, 'id', OLD.document_id, 'type', TG_OP)::text );
+       
     ELSIF TG_OP = 'UPDATE' THEN
-       opcode := 'U';
+        opcode := 'U';
+        IF EXISTS (SELECT 1 FROM public.update WHERE update_id = OLD.document_id) THEN
+            UPDATE public.update SET op=opcode, updated=now() WHERE update_id=OLD.document_id;
+        ELSE
+            INSERT INTO public.update (update_id, op, updated) VALUES (OLD.document_id, opcode, now());
+        END IF;
+        -- Notify that the account table has been updated    
+        PERFORM pg_notify('file_watcher',json_build_object('table', TG_TABLE_NAME, 'id', NEW.document_id, 'type', TG_OP)::text );
+
     ELSE
        opcode := 'I';
+	    IF EXISTS (SELECT 1 FROM public.update WHERE update_id = NEW.document_id) THEN
+            UPDATE public.update SET op=opcode, updated=now() WHERE update_id=NEW.document_id;
+	    ELSE
+		    INSERT INTO public.update (update_id, op, updated) VALUES (NEW.document_id, opcode, now());
+	    END IF;
+         -- Notify that the account table has been updated    
+	    PERFORM pg_notify('file_watcher',json_build_object('table', TG_TABLE_NAME, 'id', NEW.document_id, 'type', TG_OP)::text );
     END IF;
-
-    -- Insert the updated account into the staging table
-     IF EXISTS (SELECT 1 FROM public.update WHERE update_id = NEW.document_id) THEN
-        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=NEW.document_id;
-
-    ELSE
-        INSERT INTO public.update (update_id, op, updated) VALUES (NEW.document_id, opcode, now());
-    END IF;
-
-    -- Notify that the account table has been updated
-    PERFORM pg_notify('file_watcher', ''||NEW.document_id);
 
     RETURN NULL;
 END;

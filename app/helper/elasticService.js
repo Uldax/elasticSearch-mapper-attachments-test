@@ -13,7 +13,6 @@ var elasticSearchPort = "9200",
 //ShortCut
 var elasticPath = indexName + "/" + typeName,
     baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort,
-    folderName = "indexedDocuments",
     elasticBuilder = require("./elasticBuilder");
 
 
@@ -24,7 +23,18 @@ var client = new elasticsearch.Client({
     log: 'error'
 });
 
-
+//Test elastic serveur
+client.ping({
+    requestTimeout: 30000,
+    // undocumented params are appended to the query string
+    hello: "elasticsearch"
+}, function (error) {
+    if (error) {
+        throw new Error('elasticsearch cluster is down!');
+    } else {
+        console.log('Elastic serveur : all is well');
+    }
+});
 
 //var pageNum = request.params.page;
 //var perPage = request.params.per_page;
@@ -34,19 +44,24 @@ var elasticService = {
     //Return Promise
     createDocument: function (row) {
         var fileName = row.document_name;
+        var versionID = row.document_id;
         return new Promise(function (resolve, reject) {
             var requestData = elasticBuilder.createDocument(fileName);
-            var versionID = row.update_id;
-            client.create({
-                index: indexName,
-                type: 'document',
-                id: versionID,
-                body: requestData
-            }).then(function (resp) {
-                resolve("Document with " + versionID + " insert");
-            }, function (err) {
-                reject(err.message);
-            });
+            if (requestData) {
+                client.create({
+                    index: indexName,
+                    type: 'document',
+                    id: versionID,
+                    body: requestData
+                }).then(function (resp) {
+                    resolve("Document version " + versionID + " inserted");
+                }, function (err) {
+                    reject(err.message || err);
+                });
+            } else {
+                reject()
+            }
+
             //! fileSize > 104857600      
         });
     },
@@ -55,39 +70,44 @@ var elasticService = {
     updateDocument: function (row) {
         //Get info from db 
         // format body
-        var versionID = row.update_id;
-        var options = Object.assign({}, baseOptions);
-        client.update({
-            index: indexName,
-            type: 'document',
-            id: versionID,
-            body: {
-                // put the partial document under the `doc` key
-                doc: {
-                    title: 'Updated'
-                }
+        var versionID = row.document_id;
+        var fileName = row.document_name;
+        return new Promise(function (resolve, reject) {
+            //ReindexDocument           
+            var requestData = elasticBuilder.createDocument(fileName);
+            if (requestData) {
+                client.update({
+                    index: indexName,
+                    type: 'document',
+                    id: versionID,
+                    body: requestData
+                }).then(function (resp) {
+                    resolve("Document with " + versionID + " updated");
+                }, function (err) {
+                    reject(err.message || err);
+                });
+            } else {
+                reject();
             }
-        }).then(function (resp) {
-            console.trace("Document with " + versionID + " delete");
-        }, function (err) {
-            console.trace(err.message);
-        });
+        })
+
+
 
     },
 
     //With api
-    deleteDocument: function (row) {
-        var versionID = row.update_id;
-        var options = Object.assign({}, baseOptions);
-        client.delete({
-            index: indexName,
-            type: 'document',
-            id: versionID
-        }).then(function (resp) {
-            console.trace("Document with " + versionID + " delete");
-        }, function (err) {
-            console.trace(err.message);
-        });
+    deleteDocument: function (versionID) {
+        return new Promise(function (resolve, reject) {
+            client.delete({
+                index: indexName,
+                type: 'document',
+                id: versionID
+            }).then(function (resp) {
+                resolve("Document with " + versionID + " delete");
+            }, function (err) {
+                reject(err.message || err);
+            });
+        })
     },
 
 

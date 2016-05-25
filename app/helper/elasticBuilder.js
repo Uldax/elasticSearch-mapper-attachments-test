@@ -95,19 +95,25 @@ var elasticBuilder = {
         },
 
         createDocument: function (fileName) {
-            var base64file = utils.base64_encode("../" + folderName + "/" + fileName);
-            var fileSize = Buffer.byteLength(base64file);
-            //id is set in url sent to elastic : http POST elastic/index/type/id
-            var requestData = {
-                "attachment": {
-                    "_content": base64file,
-                    "_name": fileName,
-                    "_content_length": fileSize
-                },
-                "document_type": utils.getType(fileName),
-                "insertDate": utils.getTodayDateFormat()
+            try {
+                var base64file = utils.base64_encode("../" + folderName + "/" + fileName);
+                var fileSize = Buffer.byteLength(base64file);
+                //id is set in url sent to elastic : http POST elastic/index/type/id
+                var requestData = {
+                    "attachment": {
+                        "_content": base64file,
+                        "_name": fileName,
+                        "_content_length": fileSize
+                    },
+                    "document_type": utils.getType(fileName),
+                    "insertDate": utils.getTodayDateFormat()
+                }
+               return requestData;
             }
-            return requestData;
+            catch (err) {
+                console.log(err.message || err);
+                return;
+            }                
         },
 
 

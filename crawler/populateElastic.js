@@ -29,8 +29,6 @@ options = {
     }
 };
 
-console.log(options.url);
-
 //Insert doccument read right into pgsql database
 function insertDocumentIntoDB(filename) {
     //Add the pdf in database using client pool
@@ -156,81 +154,112 @@ function isIndexed(fileName) {
 
 //Function that create index and associate mapping for attachement file
 function createIndex() {
-    //Create the index
-    options = {
-        method: 'PUT',
-        url: baseURL + "/" + indexName
-    };
-    request(options, function (err, response, body) {
-        if (!err && response.statusCode === 200) {
-            //Create the mapping
-            objectMapping = mapping.fileMapping;
-            options = {
-                method: 'PUT',
-                url: baseURL + "/" + elasticPath + "/_mapping",
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                json: objectMapping,
-            };
-            request(options, function (err, response, body) {
-                if (!err && response.statusCode === 200) {
-                    console.log("Success creation of index");
-                } else {
-                    console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? Status code = " + response.statusCode);
-                    console.log(body);
-                }
-            });
-        }
-        else {
-            console.log("Create index error :");
-            if (err) {
-                console.log(err);
-            } else {
-                console.log(body);
+
+    return new Promise(function (resolve, reject) {
+        //Create the index
+        options = {
+            method: 'PUT',
+            url: baseURL + "/" + indexName
+        };
+        request(options, function (err, response, body) {
+            if (!err && response.statusCode === 200) {
+                //Create the mapping
+                objectMapping = mapping.fileMapping;
+                options = {
+                    method: 'PUT',
+                    url: baseURL + "/" + elasticPath + "/_mapping",
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    json: objectMapping,
+                };
+                request(options, function (err, response, body) {
+                    if (!err && response.statusCode === 200) {
+                        resolve("Success creation of index");
+                    } else {
+                        console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? Status code = " + response.statusCode);
+                        reject(body);
+                    }
+                });
             }
-        }
+            else {
+                console.log("Create index error :");
+                if (err) {
+                    reject(err);
+                } else {
+                    reject(body);
+                }
+            }
+        });
     });
+
 }
 
 //Clean all index and his content
 function cleanALL() {
-    //Option for resquest
-    options = {
-        method: 'DELETE',
-        url: baseURL + "/" + indexName
-    };
+    return new Promise(function (resolve, reject) {
+        //Option for resquest
+        options = {
+            method: 'DELETE',
+            url: baseURL + "/" + indexName
+        };
 
-    request(options, function (err, response, body) {
-        if (!err && response.statusCode === 200) {
-            console.log("index delete with success");
-        } else {
-            console.log("Error in delete index");
-            console.log(body);
-        }
+        request(options, function (err, response, body) {
+            if (!err && response.statusCode === 200) {
+                console.log("index delete with success");
+            } else {
+                console.log("Error in delete index");
+                console.log(body);
+            }
+        });
+
+
+        db.tx(function (t) {
+            // this = t = transaction protocol context;
+            // this.ctx = transaction config + state context;
+            return t.batch([
+                t.none("DELETE FROM document_privilege"),
+                t.none("DROP TRIGGER IF EXISTS account_change_trigger ON document"),
+                t.none("DELETE FROM public.update"),
+                t.none("DELETE FROM document"),
+                t.none("CREATE TRIGGER account_change_trigger " +
+                    "AFTER INSERT OR UPDATE OR DELETE " +
+                    "ON document " +
+                    "FOR EACH ROW " +
+                    "EXECUTE PROCEDURE on_account_change()")
+            ]);
+        })
+            .then(function (data) {
+                resolve("DB clean");
+            })
+            .catch(function (error) {
+                reject("ERROR:", error.message || error);
+            });
+
     });
 
-    db.tx(function (t) {
-        // this = t = transaction protocol context;
-        // this.ctx = transaction config + state context;
-        return t.batch([
-            t.none("DELETE FROM document_privilege"),
-            t.none("DROP TRIGGER IF EXISTS account_change_trigger ON document"),
-            t.none("DELETE FROM public.update"),
-            t.none("DELETE FROM document"),
-            t.none("CREATE TRIGGER account_change_trigger " + 
-            "AFTER INSERT OR UPDATE OR DELETE " +
-            "ON document " +
-            "FOR EACH ROW " +
-            "EXECUTE PROCEDURE on_account_change()")       
-        ]);
+}
+
+function cleanDB() {
+    return new Promise(function (resolve, reject) {
+        db.tx(function (t) {
+            // this = t = transaction protocol context;
+            // this.ctx = transaction config + state context;
+            return t.batch([
+                t.none("DELETE FROM document_privilege"),
+                t.none("DELETE FROM document"),
+            ]);
         })
-        .then(function (data) {
-            console.log("DB clean");
-        })
-        .catch(function (error) {
-            console.log("ERROR:", error.message || error);
-        });
+            .then(function (data) {
+                resolve("DB clean");
+            })
+            .catch(function (error) {
+                console.log(error);
+
+                reject("ERROR in clear:", error.message || error);
+            });
+    });
+
 }
 
 function justDocumentDB(filename) {
@@ -246,7 +275,7 @@ function justDocumentDB(filename) {
             });
     })
         .then(function (events) {
-            console.log("Document " + filename + " inserted in DB"); 
+            console.log("Document " + filename + " inserted in DB");
         })
         .catch(function (error) {
             console.log("ERROR:", error.message || error);
@@ -254,22 +283,42 @@ function justDocumentDB(filename) {
 
 }
 
+function crawl() {
+    utils.readFolder("../" + folderName, justDocumentDB, function (err) {
+        console.log("Error occured")
+        console.log(err);
+    });
+}
 
-function bulk(){
+function bulk() {
     //create json bulk file from db
     //sent in /_bulk
 }
 
 //Main
-if (process.argv[2] === "clear") {
+if (process.argv[2] === "clearAll") {
     console.log("Clean process...");
-    cleanALL();
+    cleanALL().then(function(mess){
+        console.log(mess);
+    });
 }
 else if (process.argv[2] === "create") {
     console.log("Create index...");
     createIndex();
 }
-else {
+else if (process.argv[2] === "clearDB") {
+    console.log("Clean db");
+    cleanDB()
+        .then(function (mess) {
+            console.log(mess);
+            db.close();
+        })
+        .catch(function (mess) {
+            console.log(messs);
+        })
+}
+
+else if (process.argv[2] === "crawl") {
     console.log("****** Start crawling ******")
     //OLD MAIN
     // utils.readFolder("../" + folderName, indexFile, function (err) {
@@ -277,8 +326,19 @@ else {
     //     console.log(err);
     // });
     //Main V2 : app handle indexing
-    utils.readFolder("../" + folderName, justDocumentDB, function (err) {
-        console.log("Error occured")
-        console.log(err);
-    });
+    crawl();
+} else {
+    cleanDB()
+        .then(function (mess) {
+            console.log(mess);
+            console.log("****** Start crawling ******")
+            //Main V2 : app handle indexing
+            utils.readFolder("../" + folderName, justDocumentDB, function (err) {
+                console.log("Error occured")
+                console.log(err);
+            });
+        })
+        .catch(function (err) {
+            console.error(err);
+        })
 }
