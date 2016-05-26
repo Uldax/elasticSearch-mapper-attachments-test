@@ -7,21 +7,21 @@ const RELEVANCE = 0;
 const ALPHABETICAL = 1;
 const DATE_ASC = 2;
 const DATE_DESC = 3;
-const PDF = "pdf";
-const DOC = "docx";
-const BULLETIN_BOARD = "unknown";
-const ALL_DOCUMENT_TYPES = "allTypes";
+const ALL_DOCUMENT_TYPES = 0;
+const BULLETIN_BOARD = 1;
+const PDF = 2;
+const DOC = 3;
 
 const ALLOWED_TYPE = [PDF, DOC, BULLETIN_BOARD];
 
 const REQUEST_STRING_FIELD = "requestString";
+const USET_AUTH_FIELD = "userAuth";
+const DOCTYPE_FIELD = "docType";
 const ORDER_BY_FIELD = "orderBy";
+const EXACT_FIELD = "exact";
 const DATE_FIELD = "date";
 const DATE_BEGIN = "begin";
 const DATE_END = "end";
-const EXACT_FIELD = "exact";
-const DOCTYPE_FIELD = "doctype";
-const USET_AUTH_FIELD = "userAuth";
 
 
 var utils = require("./utils");
@@ -54,10 +54,11 @@ var elasticBuilder = {
     publicObject: {
         //parse buildParam  
         search: function (reqBody) {
-            //console.log(reqBody);
+            console.log(reqBody);
             elasticBuilder.buildParam = reqBody;
             //Basic research 
             if (reqBody.hasOwnProperty(REQUEST_STRING_FIELD) && reqBody.requestString !== "") {
+                console.log("Begin search ... ");
                 elasticBuilder.bodySearch = elasticBuilder.base();
 
                 //Date 
@@ -67,7 +68,7 @@ var elasticBuilder = {
                     elasticBuilder.consoleStatus.date = 'false';
                 }
                 //OrderBy 
-                if (reqBody.hasOwnProperty(ORDER_BY_FIELD) && reqBody.orderBy !== "") {
+                if (reqBody.hasOwnProperty(ORDER_BY_FIELD) && reqBody.orderBy != RELEVANCE) {
                     elasticBuilder.orderBy();
                 } else {
                     elasticBuilder.consoleStatus.orderBy = 'false';
@@ -79,19 +80,19 @@ var elasticBuilder = {
                     elasticBuilder.consoleStatus.exact = 'false';
                 }
                 //Doc type 
-                if (reqBody.hasOwnProperty('doctype') && reqBody.orderBy !== "") {
+                if (reqBody.hasOwnProperty('doctype') && reqBody.orderBy != ALL_DOCUMENT_TYPES) {
                     elasticBuilder.doctype();
                 } else {
-                    elasticBuilder.consoleStatus.exact = 'false';
+                    elasticBuilder.consoleStatus.doctype = 'false';
                 }
 
                 //Normal 
                 if (!elasticBuilder.querrySet) {
-                    console.log("je passe par la");
                     elasticBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]))
                 }
+                console.log(elasticBuilder.consoleStatus);
                 return elasticBuilder.bodySearch;
-            } else {
+            } else {               
                 throw Error("No request string provided")
             }
         },

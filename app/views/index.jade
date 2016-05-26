@@ -8,6 +8,7 @@ head
     meta(name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0')
     link(rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css")
     link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', href='/stylesheets/classic.date.css')
 
 body
     #contentWrap
@@ -30,19 +31,23 @@ body
                                 option(value=0) All Results
                                 option(value=1) Exact Words
                             select#typePreference(class="spaceBetween")
-                                option(value="allTypes") All Types
-                                option(value="unknown") Bulletin Board
-                                option(value="pdf") PDF
-                                option(value="docx") DOCX
+                                option(value=0) All Types
+                                option(value=1) Bulletin Board
+                                option(value=2) PDF
+                                option(value=3) DOCX
                             label Order by
                             select#orderPreference(class="spaceBetween")
                                 option(value=0) Relevance
                                 option(value=1) Alphabetical
                                 option(value=2) Date Asc
-                                option(value=6) Date Desc
+                                option(value=3) Date Desc
                             select#datePreference(class="spaceBetween")
-                                option(value="allDate") All Dates
-                                option(value="custom") Custom
+                                option(value=0) All Dates
+                                option(value=1) Custom
+                            #chooseDates
+                                input#beginning(placeholder = "Beginning date : dd/mm/yyyy")
+                                input#end(placeholder = "End date : dd/mm/yyyy")
+                             
                             
         #resultPanel
             //- .result
@@ -73,6 +78,8 @@ body
 script(type="text/javascript", src="/bower_components/jquery/dist/jquery.min.js")
 script(type="text/javascript", src="/javascripts/ajax.js")
 script(type="text/javascript", src="/javascripts/script.js")
+script(type="text/javascript", src="/lib/picker.js")
+script(type="text/javascript", src="/lib/picker.date.js")
 
 
 

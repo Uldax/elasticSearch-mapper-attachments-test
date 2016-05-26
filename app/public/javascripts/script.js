@@ -10,5 +10,16 @@ $(document).ready(function(){
             toHideAndShow.slideUp('300')
         }
     })
+    
+    $("#chooseDates").hide();
+    $("#datePreference").change(function(evt){
+        console.log($("#datePreference")[0].value);
+        if($("#datePreference")[0].value == 1){
+            $("#chooseDates").show();
+        }
+        else {
+            $("#chooseDates").hide();
+        }
+    })
 })
 
