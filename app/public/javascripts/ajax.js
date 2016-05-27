@@ -158,7 +158,9 @@ function createItem(nom, text) {
     }
     var resultText = $("<div class='result-text'></div>");
     var name = nom.slice(0, 16);
-    name += "...";
+    if (nom.length > 16) {
+        name += "...";
+    }
 
     var documentTitle = $("<h3>" + name + "</h3>");
     var documentHighlight = $("<p>" + text + "</p>");
