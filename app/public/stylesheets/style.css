@@ -9,10 +9,10 @@ body{
 }
 
 #form{
-    width : 900px;
-    height: 300px;
+    width : 800px;
+    height: 260px;
     margin : auto;
-    margin-top: 50px;
+    margin-top: 20px;
     border-width: 2px;
     border-style: solid;
     border-color: black;
@@ -23,7 +23,7 @@ body{
 
 #inputSearch{
      width: inherit;
-     margin-top: 40px;
+     margin-top: 10px;
      margin-bottom: 20px;
      height: 30px;
      font-size: 30px;
@@ -43,7 +43,7 @@ body{
 #userPrivilege{
     width: 50%;
     height: 30px;
-    margin-top: 15px;
+    margin-top: 5px;
     border-radius: 10px;
 }
 
@@ -71,11 +71,9 @@ body{
 #advancedResearch{
     width: inherit;
     text-align: center;
-    margin-top: 10px;
 }
 
 #buttonAdvancesResearch{
-    width: 50%;
     text-align: center;
     margin: auto;
 }
@@ -91,7 +89,7 @@ body{
 }
 
 #resultPanel{
-    width : 900px;
+    width : 1200px;
     margin : auto;
     margin-top: 10px;
     border-width: 2px;
@@ -101,13 +99,13 @@ body{
     background-color: white;
     position: relative;
     text-align: center;
-    padding-left: 70px;
+    padding-left: 80px;
 }
 
 .result{ 
     float: left;
-    width: 200px;
-    height: 290px;
+    width: 210px;
+    height: 210px;
     border-width: 2px;
     border-style: solid;
     border-color: black;

@@ -15,10 +15,10 @@ $(document).ready(function(){
     $("#datePreference").change(function(evt){
         console.log($("#datePreference")[0].value);
         if($("#datePreference")[0].value == 1){
-            $("#chooseDates").show();
+            $("#chooseDates").slideDown(500);
         }
         else {
-            $("#chooseDates").hide();
+            $("#chooseDates").slideUp(500);
         }
     })
 })
