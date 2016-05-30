@@ -88,7 +88,7 @@ var elasticBuilder = {
                 //Normal 
                 if (!elasticBuilder.querrySet) {
                     console.log("je passe par la");
-                    elasticBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]))
+                    //elasticBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]))
                 }
                 return elasticBuilder.bodySearch;
             } else {
@@ -110,12 +110,12 @@ var elasticBuilder = {
                     "document_type": utils.getType(fileName),
                     "insertDate": utils.getTodayDateFormat()
                 }
-               return requestData;
+                return requestData;
             }
             catch (err) {
                 console.log(err.message || err);
                 return;
-            }                
+            }
         },
 
 
@@ -127,15 +127,24 @@ var elasticBuilder = {
 
     //Set field to retrive and highlight
     base: function () {
+
         return ejs.Request()
             .source(["attachment._name", "attachment._date"])
             .highlight(ejs.Highlight("attachment.content").numberOfFragments(3))
+            .query(
+            ejs.BoolQuery()
+                .must(
+                    ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]),
+                    ejs.IdsQuery([1033,1007,1034,1009,1010,1020,1011,1038]).type("document")
+                )
+            )
     },
 
     //Pertinance, alphabétique , date croissante , date decroissante
     orderBy: function () {
+        //https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html
         var orderByBuild = [];
-
+        //sort query
         switch (buildParam.orderBy) {
             //TODO
             case EXACT_WORD:

@@ -20,7 +20,7 @@ var elasticsearch = require('elasticsearch');
 var ejs = require('./elastic');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'error'
+    log: 'trace'
 });
 
 //Test elastic serveur
@@ -108,6 +108,18 @@ var elasticService = {
                 reject(err.message || err);
             });
         })
+    },
+    
+    createPinBoard: function(id){
+        
+    },
+    
+    deletePinBoard: function(id){
+        
+    },
+    
+    updatePinBoard : function(id){
+        
     },
 
 

@@ -230,7 +230,7 @@ function cleanALL() {
             ]);
         })
             .then(function (data) {
-                resolve("DB clean");
+                resolve("DB clean ad trigger set");
             })
             .catch(function (error) {
                 reject("ERROR:", error.message || error);
@@ -283,12 +283,6 @@ function justDocumentDB(filename) {
 
 }
 
-function crawl() {
-    utils.readFolder("../" + folderName, justDocumentDB, function (err) {
-        console.log("Error occured")
-        console.log(err);
-    });
-}
 
 function bulk() {
     //create json bulk file from db
@@ -296,17 +290,15 @@ function bulk() {
 }
 
 //Main
-if (process.argv[2] === "clearAll") {
+if (process.argv[2] === "reset") {
     console.log("Clean process...");
     cleanALL().then(function(mess){
         console.log(mess);
+        createIndex();
     });
 }
-else if (process.argv[2] === "create") {
-    console.log("Create index...");
-    createIndex();
-}
-else if (process.argv[2] === "clearDB") {
+
+else if (process.argv[2] === "clearDocument") {
     console.log("Clean db");
     cleanDB()
         .then(function (mess) {
@@ -320,18 +312,17 @@ else if (process.argv[2] === "clearDB") {
 
 else if (process.argv[2] === "crawl") {
     console.log("****** Start crawling ******")
-    //OLD MAIN
-    // utils.readFolder("../" + folderName, indexFile, function (err) {
-    //     console.log("Error occured")
-    //     console.log(err);
-    // });
-    //Main V2 : app handle indexing
-    crawl();
+    utils.readFolder("../" + folderName, indexFile, function (err) {
+        console.log("Error occured")
+        console.log(err);
+    });
+
+
 } else {
     cleanDB()
         .then(function (mess) {
             console.log(mess);
-            console.log("****** Start crawling ******")
+            console.log("****** Start insertion ******")
             //Main V2 : app handle indexing
             utils.readFolder("../" + folderName, justDocumentDB, function (err) {
                 console.log("Error occured")
