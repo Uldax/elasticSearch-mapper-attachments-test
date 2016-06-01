@@ -23,7 +23,6 @@ app.use('/', routes);
 //Set up elastic updater
 //Warning may be heavy
 elasticUpdater.start();
-elasticUpdater.trackUpdate();
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

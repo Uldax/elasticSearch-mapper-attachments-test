@@ -1,5 +1,77 @@
 //Class that build request to send to elastic search serveur
 
+/*
+POST /opus/_search
+{
+   "from": 0,
+   "size": 19,
+   "_source": {
+      "excludes": [
+         "attachment._content"
+      ]
+   },
+   "highlight": {
+      "fields": {
+         "attachment.content": {},
+         "label": {},
+         "pin" : {}
+      },
+      "number_of_fragments": 3
+   },
+   "query": {
+      "bool": {
+         "should": [
+          {
+            "match": {
+              "attachment.content": {
+                "query": "essai"
+              }
+            }     
+          },
+          {
+            "match": {
+              "label": {
+                "query": "p"
+              }
+            }     
+          }
+        ],
+         "filter": {
+            "bool": {
+               "should": [
+                  {
+                     "terms": {
+                        "_id": [
+                           "1029"
+                        ]
+                     }
+                  },
+                  {
+                     "bool": {
+                        "must": [
+                           {
+                              "terms": {
+                                 "_d": [
+                                    "1029",
+                                    "1030"
+                                 ]
+                              }
+                           }
+                        ]
+                     }
+                  }
+               ]
+            }
+         },
+          "minimum_should_match" : 1
+      }
+   }
+}
+
+*/
+
+
+
 //TODO : add date , exact , type  
 const ALL_RESULTS = 0;
 const EXACT_WORD = 1;
@@ -88,12 +160,7 @@ var elasticBuilder = {
 
                 //Normal 
                 if (!elasticBuilder.querrySet) {
-<<<<<<< HEAD
-                    console.log("je passe par la");
-                    //elasticBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]))
-=======
                     elasticBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]))
->>>>>>> d9d912523d094dd4500fc236796cf0683f7202b4
                 }
                 console.log(elasticBuilder.consoleStatus);
                 return elasticBuilder.bodySearch;
@@ -102,19 +169,23 @@ var elasticBuilder = {
             }
         },
 
-        createDocument: function (fileName) {
+        createDocument: function (path,data) {
+            console.log(path);
+               console.log(data);
             try {
-                var base64file = utils.base64_encode("../" + folderName + "/" + fileName);
+                var base64file = utils.base64_encode("../" + path );
                 var fileSize = Buffer.byteLength(base64file);
                 //id is set in url sent to elastic : http POST elastic/index/type/id
                 var requestData = {
                     "attachment": {
                         "_content": base64file,
-                        "_name": fileName,
+                        "_name": data.name,
                         "_content_length": fileSize
                     },
-                    "document_type": utils.getType(fileName),
-                    "insertDate": utils.getTodayDateFormat()
+                    "document_type": utils.getType(path),
+                    "insertDate": utils.getTodayDateFormat(),
+                    "document_id" : data.document_id,
+                    "version_id" : data.version_id                 
                 }
                 return requestData;
             }
@@ -122,6 +193,20 @@ var elasticBuilder = {
                 console.log(err.message || err);
                 return;
             }
+        },
+        
+        createPin : function(row){
+            
+            var requestData = {
+                    "layou_label": row.label_layout,
+                    "pin_id": row.pin_id,             
+                    "pin_content" : row.pin_label,
+                    "pinboard_label" : row.pinboard_label                 
+                }
+            if(row.hasOwnProperty('vote_pin')){
+                requestData.pin_vote = row.vote_pin;
+            }
+            return requestData;
         },
 
 

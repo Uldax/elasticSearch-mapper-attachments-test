@@ -5,7 +5,14 @@ elasticSearchPort = "9200",
     typeName = "document",
     serverIp = "localhost",
     folderName = "indexedDocuments",
-    connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
+    connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/opus';
+
+var elasticsearch = require('elasticsearch');
+var client = new elasticsearch.Client({
+    host: serverIp + ":" + elasticSearchPort,
+    log: 'trace'
+});
+
 
 //Module
 request = require("request"),
@@ -154,7 +161,6 @@ function isIndexed(fileName) {
 
 //Function that create index and associate mapping for attachement file
 function createIndex() {
-
     return new Promise(function (resolve, reject) {
         //Create the index
         options = {

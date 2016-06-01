@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "server.js",
   "dependencies": {
+    "elasticsearch": "^11.0.1",
     "exif-parser": "^0.1.9",
     "pg": "^4.5.5",
     "pg-promise": "^4.2.5",

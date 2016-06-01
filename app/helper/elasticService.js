@@ -20,7 +20,7 @@ var elasticsearch = require('elasticsearch');
 var ejs = require('./elastic');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'trace'
+    log: 'error'
 });
 
 //Test elastic serveur
@@ -43,25 +43,33 @@ var elasticService = {
     // Warning old version
     //Return Promise
     createDocument: function (row) {
-        var fileName = row.document_name;
-        var versionID = row.document_id;
+        console.log(row)
+        var path = row.path;
+
+        var data = {
+            document_id: row.file_id,
+            version_id: row.version_id,
+            name: row.label
+        }
+        console.log(data);
+
+
         return new Promise(function (resolve, reject) {
-            var requestData = elasticBuilder.createDocument(fileName);
+            var requestData = elasticBuilder.createDocument(path, data);
             if (requestData) {
                 client.create({
                     index: indexName,
                     type: 'document',
-                    id: versionID,
-                    body: requestData
+                    body: requestData,
+                    _id: data.document_id
                 }).then(function (resp) {
-                    resolve("Document version " + versionID + " inserted");
+                    resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
                 }, function (err) {
                     reject(err.message || err);
                 });
             } else {
                 reject()
             }
-
             //! fileSize > 104857600      
         });
     },
@@ -109,17 +117,41 @@ var elasticService = {
             });
         })
     },
-    
-    createPinBoard: function(id){
+
+    createPin: function (row) {
+        return new Promise(function (resolve, reject) {
+            var requestData = elasticBuilder.createPin(row);
+            if (requestData) {
+                client.create({
+                    index: indexName,
+                    type: 'pin',
+                    id: row.pin_id,
+                    body: requestData
+                }).then(function (resp) {
+                    console.log('ok send');
+                    resolve("PIN id " + row.pin_id + " inserted");
+                }, function (err) {
+                    console.log('nop send');
+                    reject(err.message || err);
+                });
+            } else {
+                reject("error in requestData");
+            }
+        });
+    },
+
+    //Todo
+    createPinBoard: function (row) {
         
     },
-    
-    deletePinBoard: function(id){
-        
+
+
+    deletePinBoard: function (id) {
+
     },
-    
-    updatePinBoard : function(id){
-        
+
+    updatePinBoard: function (id) {
+
     },
 
 

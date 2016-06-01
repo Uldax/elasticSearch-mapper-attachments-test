@@ -1,6 +1,5 @@
 var mapping = {
     fileMapping: {
-
         "mappings": {
             "document": {
                 "properties": {
@@ -46,15 +45,17 @@ var mapping = {
 
             "pin": {
                 "properties": {
-                    "label": {
+                    "layou_label": {
                         "type": "string"
                     },
                     "pin_id" : {
                        "type": "long"
                     },
-                    
+                    "pin_vote" : {
+                        "type" : "string"
+                    },                              
                     //Todo remove html from content
-                    "content": {
+                    "pin_content": {
                         "type": "string"
                     },
                     "pinboard_label": {
