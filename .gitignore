@@ -2,3 +2,4 @@ indexedDocuments
 crawler/node_modules
 npm-debug.log
 app/bower_components
+app/public/lib/pickadate.js-3.5.6

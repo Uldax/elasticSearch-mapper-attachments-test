@@ -76,7 +76,6 @@ router.post('/search', function (req, res, next) {
             // });
         }).catch(function (err) {
             res.send(err.message || err);
-            return null;
         })
 
     function filterOutput() {

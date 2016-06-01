@@ -55,8 +55,21 @@ function postCall(evt) {
     //     .fail(function () {
     //         alert("error");
     //     })
-    var myObject = { requestString: $("#inputSearch")[0].value , userAuth: $("#userPrivilege")[0].value };
+
+    var myObject = {
+        requestString: $("#inputSearch")[0].value,
+        userAuth: $("#userPrivilege")[0].value,
+        docType: $("#typePreference")[0].value,
+        orderBy: $("#orderPreference")[0].value,
+        exact: $("#filterResults")[0].value,
+        date: {
+            begin: $("#beginning")[0].value,
+            end: $("#end")[0].value
+        }
+    };
+
     console.log(myObject);
+
     $.ajax({
         url: '/search',
         type: 'POST',
@@ -102,6 +115,7 @@ function readAndDisplayData(data) {
     $(".noResult").remove();
     $("#resultPanel").hide();
     var myObject = data;
+    console.log(data);
     var nom = "";
     var text = "";
     if (myObject.hasOwnProperty("error")) {
@@ -144,7 +158,9 @@ function createItem(nom, text) {
     }
     var resultText = $("<div class='result-text'></div>");
     var name = nom.slice(0, 16);
-    name += "...";
+    if (nom.length > 16) {
+        name += "...";
+    }
 
     var documentTitle = $("<h3>" + name + "</h3>");
     var documentHighlight = $("<p>" + text + "</p>");
