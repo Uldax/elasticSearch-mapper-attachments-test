@@ -101,8 +101,8 @@ var elasticService = {
     },
 
     bulkPin: function (rows) {
-
         return new Promise(function (resolve, reject) {
+            console.log("Call to builder");
             var body_json = elasticBuilder.bulkPin(rows);
             if (body_json) {
                 client.bulk({
