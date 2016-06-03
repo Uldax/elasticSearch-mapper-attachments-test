@@ -45,7 +45,10 @@ var mapping = {
 
             "pin": {
                 "properties": {
-                    "layou_label": {
+                    "layout_label": { 
+                        "type": "string"
+                    },
+                    "label": {
                         "type": "string"
                     },
                     "pin_id" : {
@@ -55,7 +58,7 @@ var mapping = {
                         "type" : "string"
                     },                              
                     //Todo remove html from content
-                    "pin_content": {
+                    "pin_content": {               
                         "type": "string"
                     },
                     "pinboard_label": {

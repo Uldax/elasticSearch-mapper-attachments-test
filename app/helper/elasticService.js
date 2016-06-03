@@ -98,13 +98,29 @@ var elasticService = {
                 reject();
             }
         })
-
-
-
     },
 
-    //With api
-    deleteDocument: function (versionID) {
+    bulkPin: function (rows) {
+
+        return new Promise(function (resolve, reject) {
+            var body_json = elasticBuilder.bulkPin(rows);
+            if (body_json) {
+                client.bulk({
+                    body: body_json
+                }).then(function (resp) {
+                    resolve("All pinboards indexed");
+                }, function (err) {
+                    reject(err.message || err);
+                });
+            }
+            else {
+                reject();
+            }
+        })
+    },
+
+//With api
+deleteDocument: function (versionID) {
         return new Promise(function (resolve, reject) {
             client.delete({
                 index: indexName,

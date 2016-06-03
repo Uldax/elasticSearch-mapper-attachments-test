@@ -101,6 +101,14 @@ var ejs = require('./elastic');
 
 var folderName = "indexedDocuments";
 
+var elasticSearchPort = "9200",
+    protocol = "http",
+    indexName = "opus",
+    typeName = "document",
+    serverIp = "localhost",
+    folderName = "indexedDocuments";
+
+
 /*
 Param{
     userAuth,
@@ -164,7 +172,7 @@ var elasticBuilder = {
                 }
                 console.log(elasticBuilder.consoleStatus);
                 return elasticBuilder.bodySearch;
-            } else {               
+            } else {
                 throw Error("No request string provided")
             }
         },
@@ -286,7 +294,36 @@ var elasticBuilder = {
 
     exact: function () {
 
-    }
+    },
+
+
+    //Function which returns the JSON to index pins
+    bulkPin: function (rows) {
+        
+        var myJson = [];
+        
+        for (var row = 0; row < rows.length; row++) {
+            var layout_label_value = rows[row].label_layout;
+            var pin_id_value = rows[row].pin_id;
+            var pin_label_value = rows[row].label_pin;
+            var pinboard_label_value = rows[row].label_pinboard;
+            var pin_vote_value = rows[row].vote;
+            
+            myJson.push(
+                { index: { _index: indexName, _type: 'pin', _id: pin_id_value } },
+                {
+                     layout_label: layout_label_value, 
+                     pin_label: pin_label_value, 
+                     pinboard_label: pinboard_label_value, 
+                     pin_vote: pin_vote_value 
+                }
+            );
+        }
+        console.log(myJson);
+        return myJson;
+    },
 
 }
 module.exports = elasticBuilder.publicObject;
+module.exports = elasticBuilder;
+
