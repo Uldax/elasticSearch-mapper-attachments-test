@@ -70,21 +70,14 @@ DECLARE
     opcode Char(1);
 BEGIN
      
-    --tableKey := 'pin_id';
-    IF TG_OP = 'DELETE' OR TG_OP = 'TRUNCATE' THEN
-        opcode := 'D';
-    ELSIF TG_OP = 'UPDATE' THEN 
+    IF TG_OP = 'UPDATE' THEN 
         opcode := 'U';
     ELSIF TG_OP = 'INSERT' THEN
         opcode := 'I';    
     END IF;
     
-    IF NEW.version_id IS NULL THEN
-        up_id := OLD.version_id;
-    ELSE 
-        up_id := NEW.version_id;
-    END IF;
-    -- Check if there si already an update  
+    up_id := NEW.version_id;
+    -- Check if there is already an update  
     IF EXISTS (SELECT 1 FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
         WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 

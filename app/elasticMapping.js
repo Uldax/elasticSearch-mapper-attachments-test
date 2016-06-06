@@ -42,6 +42,7 @@ var mapping = {
             }
         }
     },
+
     pinMapping: {
         "pin": {
             "properties": {
@@ -64,9 +65,6 @@ var mapping = {
             }
         }
     }
-
-}
-
 }
 
 module.exports = mapping

@@ -1,6 +1,6 @@
 "use strict";
-
-var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/opus';
+var conf = require('../config.js');
+var connectionString = conf.db.pgsql;
 var pgp = require('pg-promise')();
 var db = pgp(connectionString);
 
@@ -22,6 +22,25 @@ var pinModel = {
 
     getPinByID: function (pin_id) {
         return db.one("SELECT * FROM pin WHERE pin_id = $1", pin_id);
+    },
+
+    deletePins: function () {
+        return new Promise(function (resolve, reject) {
+            db.tx(function (t) {
+                // this = t = transaction protocol context;
+                // this.ctx = transaction config + state context;
+                return t.batch([
+                    t.none("DELETE FROM pinboard.pin"),
+                    t.none("DELETE FROM pinboard.pinboard")
+                ]);
+            })
+                .then(function (data) {
+                    resolve("Pin removed");
+                })
+                .catch(function (error) {
+                    reject(error.message || error);
+                });
+        })
     }
 
 }

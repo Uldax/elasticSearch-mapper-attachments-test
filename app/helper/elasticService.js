@@ -3,16 +3,17 @@ var request = require("request"),
     utils = require("./utils");
 
 //Conf parameters
-var elasticSearchPort = "9200",
-    protocol = "http",
+var conf = require("../config");
+var elasticSearchPort = conf.elastic.port,
+    protocol = conf.elastic.protocol,
+    serverIp = conf.elastic.serverIp,
     indexName = "opus",
     typeName = "document",
-    serverIp = "localhost",
     folderName = "indexedDocuments";
 
 //ShortCut
 var elasticPath = indexName + "/" + typeName,
-    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort,
+    baseURL = conf.elastic.protocol.baseURL;
     elasticBuilder = require("./elasticBuilder");
 
 
@@ -35,7 +36,6 @@ client.ping({
         console.log('Elastic serveur : all is well');
     }
 });
-
 //var pageNum = request.params.page;
 //var perPage = request.params.per_page;
 var elasticService = {

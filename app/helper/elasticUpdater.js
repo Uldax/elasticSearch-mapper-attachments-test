@@ -1,15 +1,8 @@
-var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/opus';
-var pg = require('pg');
-var pgp = require('pg-promise')();
+var conf = require('../config.js');
 var pinModel = require('../models/pin.js');
 var updateModel = require('../models/update.js');
 var documentModel = require('../models/document.js');
-
-var db = pgp(connectionString);
-var client;
 var elasticService = require("./elasticService");
-
-
 
 var elasticUpdater = {
 
@@ -57,7 +50,6 @@ function updateDocument(op, update_id, type_id) {
     var actionDefiner = new Promise(function (resolve, reject) {
         documentModel.getFileInfoById(update_id)
             .then(function (row_to_update) {
-                console.log("debut" + op + "fin");
                 try {
                     if (op == "U") {
                         resolve(elasticService.updateDocument(row_to_update));
@@ -79,7 +71,7 @@ function updateDocument(op, update_id, type_id) {
         console.log(message);
         console.log(update_id + " " + type_id);
         //check here
-        db.none("DELETE FROM public.update WHERE update_id = $1 AND type_id = $2", [update_id, type_id])
+        updateModel.deleteUpdate(update_id,type_id)
             .catch(function (err) {
                 console.log(err.message || err);
             })
@@ -118,7 +110,7 @@ function updatePin(op, update_id, type_id) {
 
     actionDefiner.then(function (message) {
             console.log(message);
-            db.none("DELETE FROM public.update WHERE update_id = $1 AND type_id = $2  ", [update_id, type_id])
+            updateModel.deleteUpdate(update_id,type_id)
                 .catch(function (err) {
                     console.log(err.message || err);
                 })
@@ -132,15 +124,15 @@ function updatePinboard(op, update_id, type_id) {
     var actionDefiner = new Promise(function (resolve, reject) {
         var action;
         //Get the ligne to update
-        if (op === "INSERT") {
+        if (op === "I") {
             //db request
             pinModel.getPinInfo(update_id).then(function (row_to_insert) {
                 action = resolve(elasticService.createPin(row_to_insert));
             })
 
-        } else if (op === "DELETE" || op == "TRUNCATE" || op === "UPDATE") {
+        } else if (op === "D" || op == "T" || op === "U") {
             pinModel.getPinByID(update_id).then(function (row_to_update) {
-                if (op == "UPDATE") {
+                if (op == "U") {
                     action = resolve(elasticService.updatePin(row_to_update));
                 } else {
                     action = resolve(elasticService.deletePin(row_to_update.pin_id));
