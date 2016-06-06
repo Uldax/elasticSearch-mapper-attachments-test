@@ -64,7 +64,7 @@ describe('Elastic Search', function () {
         })
     });
 
-    it("Serveur should ping", function (done) {
+    it("Serveur should respond ping", function (done) {
         this.timeout(30000);
         client.ping({
             requestTimeout: 30000,
@@ -77,7 +77,6 @@ describe('Elastic Search', function () {
                 done();
             }
         });
-
     });
 
 })

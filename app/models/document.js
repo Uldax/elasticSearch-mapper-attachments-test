@@ -6,7 +6,7 @@ var pgp = require('pg-promise')();
 var db = pgp(connectionString);
 
 function onError(err) {
-    console.log(err);
+    console.log(err.message || err);
     Promise.reject(err.message || err);
 }
 
@@ -74,7 +74,7 @@ var documentModel = {
                     resolve("Files delete");
                 })
                 .catch(function (error) {
-                    reject("ERROR:", error.message || error);
+                    reject( error.message || error);
                 });
         })
 

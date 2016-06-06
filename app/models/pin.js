@@ -31,7 +31,8 @@ var pinModel = {
                 // this.ctx = transaction config + state context;
                 return t.batch([
                     t.none("DELETE FROM pinboard.pin"),
-                    t.none("DELETE FROM pinboard.pinboard")
+                    t.none("DELETE FROM pinboard.pinboard"),
+                    t.none("DELETE FROM pinboard.layout"),
                 ]);
             })
                 .then(function (data) {
@@ -42,7 +43,6 @@ var pinModel = {
                 });
         })
     }
-
 }
 
 

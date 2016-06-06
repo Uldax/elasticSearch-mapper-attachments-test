@@ -12,7 +12,7 @@ var db = pgp(connectionString);
 var testModel = {
     removeTrigger: function () {
         return new Promise(function (resolve, reject) {
-            db.tx(function (t) {
+            db.task(function (t) {
                 // this = t = transaction protocol context;
                 // this.ctx = transaction config + state context;
                 return t.batch([
@@ -34,7 +34,7 @@ var testModel = {
 
     setTrigger: function () {
         return new Promise(function (resolve, reject) {
-            db.tx(function (t) {
+            db.task(function (t) {
                 // this = t = transaction protocol context;
                 // this.ctx = transaction config + state context;
                 return t.batch([
@@ -80,32 +80,67 @@ var testModel = {
         })
     },
 
-
-
-    clean_db: function (next) {
+    clean_db: function () {
         return new Promise(function (resolve, reject) {
-            testModel.removeTrigger()
-                .then(function (mess) {
-                    var P1 = update.deleteUpdates();
-                    var P2 = document.deleteFiles();
-                    var P3 = pin.deletePins();
-                    var promiseArray = [P1, P2, P3];
-                    //don't know why didn't work
-                    Promise.all(promiseArray)
-                        .then(function (result) {
-                            resolve(result);
-                        })
-                        .catch(function (err) {
-                            reject(err.message || err);
-                        })
+            var P1 = update.deleteUpdates();
+            var P2 = document.deleteFiles();
+            var P3 = pin.deletePins();
+            var promiseArray = [P1, P2, P3];
+            //don't know why didn't work
+            Promise.all(promiseArray)
+                .then(function (result) {
+                    resolve(result);
                 })
                 .catch(function (err) {
                     reject(err.message || err);
                 })
         })
+    },
+
+    restart_db: function () {
+        return new Promise(function (resolve, reject) {
+            testModel.removeTrigger().then(function (mess) {
+                testModel.clean_db().then(function () {
+                    testModel.setTrigger().then(function () {
+                        resolve("success");
+                    }).catch(function (err) {
+                        reject(err.message || err);
+                    })
+                }).catch(function (err) {
+                    reject(err.message || err);
+
+                })
+            }).catch(function (err) {
+                reject(err.message || err);
+            })
+        })
+    },
+
+    insertLayout: function () {
+        return db.one("INSERT INTO pinboard.layout(label, width, height, user_id) VALUES ('layoutTest', 200, 200, 1) RETURNING layout_id")
+    },
+
+    updateLayout: function (layout_id, new_label) {
+        return db.none("UPDATE pinboard.layout SET label = $1 WHERE layout_id = $2", [new_label, layout_id]);
+    },
+
+    insertPinBoard: function (pinboard_label, layout_id, user_id) {
+        return db.one("INSERT INTO pinboard.pinboard(label, layout_id, user_id) VALUES ($1,$2,$3) RETURNING pinboard_id ", [pinboard_label, layout_id, user_id]);
+    },
+
+    updatePinBoard: function (pinboard_id, new_label) {
+        return db.none("UPDATE pinboard.pinboard SET label = $1 WHERE pinboard_id = $2", [new_label, pinboard_id]);
+    },
+    
+    insertPin: function (pinboard_id, label, user_id) {
+        return db.one("INSERT INTO pinboard.pin(pinboard_id, label, user_id) VALUES ($1, $2, $3) RETURNING pin_id ", [pinboard_id, label, user_id]);
+    },
+    
+     updatePin: function (pin_id, new_label) {
+        return db.none("UPDATE pinboard.pin SET label = $1 WHERE pin_id = $2", [new_label, pin_id]);
+    },
 
 
-    }
 }
 
 
