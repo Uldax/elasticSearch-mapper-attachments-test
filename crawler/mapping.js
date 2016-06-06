@@ -48,6 +48,9 @@ var mapping = {
                 "layou_label": {
                     "type": "string"
                 },
+                 "label": {
+                        "type": "string"
+                 },
                 "pin_id": {
                     "type": "long"
                 },
@@ -60,13 +63,13 @@ var mapping = {
                 },
                 "pinboard_label": {
                     "type": "string"
+            },
+
+            
                 }
             }
         }
-    }
-
-}
-
+    
 }
 
 module.exports = mapping

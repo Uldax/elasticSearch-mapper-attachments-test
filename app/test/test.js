@@ -87,7 +87,7 @@ describe('Database Update', function () {
   describe('Pin', function () {
 
     it("should add entry 'I' into update when pin insert", function (done) {
-
+        done();
     });
     
   });
