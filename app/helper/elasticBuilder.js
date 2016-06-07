@@ -134,7 +134,6 @@ var elasticBuilder = {
     publicObject: {
         //parse buildParam  
         search: function (reqBody) {
-            console.log(reqBody);
             elasticBuilder.buildParam = reqBody;
             //Basic research 
             if (reqBody.hasOwnProperty(REQUEST_STRING_FIELD) && reqBody.requestString !== "") {
@@ -177,11 +176,9 @@ var elasticBuilder = {
             }
         },
 
-        createDocument: function (path,data) {
-            console.log(path);
-               console.log(data);
+        createDocument: function (path, data) {
             try {
-                var base64file = utils.base64_encode("../" + path );
+                var base64file = utils.base64_encode("../" + path);
                 var fileSize = Buffer.byteLength(base64file);
                 //id is set in url sent to elastic : http POST elastic/index/type/id
                 var requestData = {
@@ -192,8 +189,8 @@ var elasticBuilder = {
                     },
                     "document_type": utils.getType(path),
                     "insertDate": utils.getTodayDateFormat(),
-                    "document_id" : data.document_id,
-                    "version_id" : data.version_id                 
+                    "document_id": data.document_id,
+                    "version_id": data.version_id
                 }
                 return requestData;
             }
@@ -202,19 +199,43 @@ var elasticBuilder = {
                 return;
             }
         },
-        
-        createPin : function(row){
-            
+
+        createPin: function (row) {
             var requestData = {
-                    "layou_label": row.label_layout,
-                    "pin_id": row.pin_id,             
-                    "pin_content" : row.pin_label,
-                    "pinboard_label" : row.pinboard_label                 
-                }
-            if(row.hasOwnProperty('vote_pin')){
+                "layou_label": row.label_layout,
+                "pin_id": row.pin_id,
+                "pin_content": row.pin_label,
+                "pinboard_label": row.pinboard_label
+            }
+            if (row.hasOwnProperty('vote_pin')) {
                 requestData.pin_vote = row.vote_pin;
             }
             return requestData;
+        },
+
+        //Function which returns the JSON to index pins
+        bulkPin: function (rows) {
+
+            var myJson = [];
+
+            for (var row = 0; row < rows.length; row++) {
+                var layout_label_value = rows[row].label_layout;
+                var pin_id_value = rows[row].pin_id;
+                var pin_label_value = rows[row].label_pin;
+                var pinboard_label_value = rows[row].label_pinboard;
+                var pin_vote_value = rows[row].vote;
+
+                myJson.push(
+                    { index: { _index: indexName, _type: 'pin', _id: pin_id_value } },
+                    {
+                        layout_label: layout_label_value,
+                        pin_label: pin_label_value,
+                        pinboard_label: pinboard_label_value,
+                        pin_vote: pin_vote_value
+                    }
+                );
+            }
+            return myJson;
         },
 
 
@@ -233,8 +254,8 @@ var elasticBuilder = {
             .query(
             ejs.BoolQuery()
                 .must(
-                    ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]),
-                    ejs.IdsQuery([1033,1007,1034,1009,1010,1020,1011,1038]).type("document")
+                ejs.MatchQuery('attachment.content', elasticBuilder.buildParam[REQUEST_STRING_FIELD]),
+                ejs.IdsQuery([1033, 1007, 1034, 1009, 1010, 1020, 1011, 1038]).type("document")
                 )
             )
     },
@@ -296,34 +317,6 @@ var elasticBuilder = {
 
     },
 
-
-    //Function which returns the JSON to index pins
-    bulkPin: function (rows) {
-        
-        var myJson = [];
-        
-        for (var row = 0; row < rows.length; row++) {
-            var layout_label_value = rows[row].label_layout;
-            var pin_id_value = rows[row].pin_id;
-            var pin_label_value = rows[row].label_pin;
-            var pinboard_label_value = rows[row].label_pinboard;
-            var pin_vote_value = rows[row].vote;
-            
-            myJson.push(
-                { index: { _index: indexName, _type: 'pin', _id: pin_id_value } },
-                {
-                     layout_label: layout_label_value, 
-                     pin_label: pin_label_value, 
-                     pinboard_label: pinboard_label_value, 
-                     pin_vote: pin_vote_value 
-                }
-            );
-        }
-        console.log(myJson);
-        return myJson;
-    },
-
 }
 module.exports = elasticBuilder.publicObject;
-module.exports = elasticBuilder;
 

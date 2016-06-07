@@ -11,6 +11,5 @@ module.exports = {
         port : "9200",
         protocol : "http",
         serverIp : "localhost",
-        baseURL: this.protocol + "://" + this.serverIp + ":" + this.elasticSearchPort       
     }
 };

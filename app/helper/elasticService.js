@@ -13,8 +13,9 @@ var elasticSearchPort = conf.elastic.port,
 
 //ShortCut
 var elasticPath = indexName + "/" + typeName,
-    baseURL = conf.elastic.protocol.baseURL;
+    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort,       
     elasticBuilder = require("./elasticBuilder");
+    
 
 
 var elasticsearch = require('elasticsearch');
@@ -24,18 +25,6 @@ var client = new elasticsearch.Client({
     log: 'error'
 });
 
-//Test elastic serveur
-client.ping({
-    requestTimeout: 30000,
-    // undocumented params are appended to the query string
-    hello: "elasticsearch"
-}, function (error) {
-    if (error) {
-        throw new Error('elasticsearch cluster is down!');
-    } else {
-        console.log('Elastic serveur : all is well');
-    }
-});
 //var pageNum = request.params.page;
 //var perPage = request.params.per_page;
 var elasticService = {
@@ -43,16 +32,12 @@ var elasticService = {
     // Warning old version
     //Return Promise
     createDocument: function (row) {
-        console.log(row)
         var path = row.path;
-
         var data = {
             document_id: row.file_id,
             version_id: row.version_id,
             name: row.label
         }
-        console.log(data);
-
 
         return new Promise(function (resolve, reject) {
             var requestData = elasticBuilder.createDocument(path, data);
@@ -68,12 +53,11 @@ var elasticService = {
                     reject(err.message || err);
                 });
             } else {
-                reject()
+                reject("no request data");
             }
             //! fileSize > 104857600      
         });
     },
-
 
     updateDocument: function (row) {
         //Get info from db 
@@ -102,7 +86,6 @@ var elasticService = {
 
     bulkPin: function (rows) {
         return new Promise(function (resolve, reject) {
-            console.log("Call to builder");
             var body_json = elasticBuilder.bulkPin(rows);
             if (body_json) {
                 client.bulk({
@@ -119,8 +102,8 @@ var elasticService = {
         })
     },
 
-//With api
-deleteDocument: function (versionID) {
+    //With api
+    deleteDocument: function (versionID) {
         return new Promise(function (resolve, reject) {
             client.delete({
                 index: indexName,
@@ -144,10 +127,8 @@ deleteDocument: function (versionID) {
                     id: row.pin_id,
                     body: requestData
                 }).then(function (resp) {
-                    console.log('ok send');
                     resolve("PIN id " + row.pin_id + " inserted");
                 }, function (err) {
-                    console.log('nop send');
                     reject(err.message || err);
                 });
             } else {
@@ -158,9 +139,8 @@ deleteDocument: function (versionID) {
 
     //Todo
     createPinBoard: function (row) {
-        
-    },
 
+    },
 
     deletePinBoard: function (id) {
 
@@ -169,7 +149,6 @@ deleteDocument: function (versionID) {
     updatePinBoard: function (id) {
 
     },
-
 
     search: function (buildOption) {
         //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
@@ -185,6 +164,47 @@ deleteDocument: function (versionID) {
             });
         });
     },
+
+    countByType: function (type) {
+        return new Promise(function (resolve, reject) {
+            client.count({
+                index: 'opus'
+            }, function (error, response) {
+                resolve(response);
+            });
+        })
+
+    },
+
+    ping: function (type) {
+        return client.ping({
+            requestTimeout: 30000,
+            // undocumented params are appended to the query string
+            hello: "elasticsearch"
+        });
+    },
+
+    countFromAnOtherWorld(type) {
+        //index file
+        //Option for resquest
+        var options = {
+            method: 'GET',
+            url: baseURL + "/opus/_count",
+        };
+        return new Promise(function (resolve, reject) {
+            request(options, function (err, response, body) {
+                if (!err) {
+                    if (response.statusCode === 200) {
+                        if (typeof body != undefined) {
+                            resolve(JSON.parse(body));
+                        }
+                    } else {
+                        reject(err);
+                    }
+                }
+            })
+        })
+    }
 }
 
 

@@ -206,6 +206,28 @@ describe('Database Update', function () {
 
   });
 
+  describe('Pin vote', function () {
+    var layout_id = 0;
+    var pinboardId = 0;
+    var pin_id = 0;
+
+    //Insert layout 
+    before(function (done) {
+      this.timeout(3000);
+      testModel.clean_db().then(function () {
+        testModel.insertLayout().then(function (row) {
+          layout_id = row.layout_id;
+          testModel.insertPinBoard("superPinBoardLabel", layout_id, 1).then(function (row) {
+            pinboardId = row.pinboard_id;
+            done();
+          }).catch(onError)
+
+        }).catch(onError)
+      }).catch(onError)
+    })
+
+  });
+
 
 });
 

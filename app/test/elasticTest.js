@@ -1,6 +1,12 @@
-
 var conf = require("../config");
 var mapping = require("../elasticMapping");
+//BDD style assertions for node.js
+var should = require('should');
+
+var assert = require('assert');
+//for HTTP assertions 
+var request = require('supertest');
+
 
 var elasticSearchPort = conf.elastic.port,
     protocol = conf.elastic.protocol,
@@ -11,21 +17,25 @@ var elasticSearchPort = conf.elastic.port,
     baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
 elasticPath = indexName + "/" + typeName;
 
-
-var options = {
-    method: 'POST',
-    url: baseURL + "/" + elasticPath + "/",
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Transfer-Encoding': 'chunked'
-    }
-};
+var document = require('../models/document');
+var updater = require('../helper/elasticUpdater');
 var service = require('../helper/elasticService');
+var update = require('../models/update');
+var testModel = require('../models/test');
+var fileLabel = "superTest";
+
 var elasticsearch = require('elasticsearch');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
     log: 'error'
 });
+
+
+var myDocPath = "indexedDocuments/FEC.pdf";
+
+function onError(err) {
+    console.log(err.message || err);
+}
 
 
 function createIndex() {
@@ -62,21 +72,55 @@ describe('Elastic Search', function () {
                 })
             }
         })
+
     });
 
     it("Serveur should respond ping", function (done) {
-        this.timeout(30000);
-        client.ping({
-            requestTimeout: 30000,
-            // undocumented params are appended to the query string
-            hello: "elasticsearch"
-        }, function (error) {
-            if (error) {
-                throw new Error('elasticsearch cluster is down!');
-            } else {
-                done();
-            }
-        });
+        this.timeout(3000);
+        service.ping().then(function () {
+            done();
+        }).catch(onError)
     });
 
+    describe('Elastic updater', function () {
+        before(function (done) {
+            // In we clean and set the trigger for the bd
+            testModel.restart_db().then(function () {
+                document.insertFolder("root").then(function () {
+                    done()
+                }).catch(onError)
+            }).catch(onError)
+        })
+
+        describe('Document update', function () {
+
+            it("Document update should be remove after tracker and add field in elastic", function (done) {
+                this.timeout(8000);
+                return Promise.resolve()
+                    .then(function () {
+                        return document.insertFileInFolder("root", fileLabel, myDocPath);
+                    })
+                    .then(function () {
+                        return updater.readUpdateTable();
+                    })
+                    .then(function (mess) {
+                        return update.getUpdates();
+                    })
+                    .then(function (rows) {
+                        rows.should.have.length(0);
+                        setTimeout(function () {
+                            return service.countFromAnOtherWorld("document").then(function (body) {
+                                body.count.should.equal(1);
+                                done();
+                            })
+                        }, 1000);
+
+                    })
+                    .catch(function (err) {
+                        console.log(err.message || err);
+                    });
+            })
+        })
+
+    })
 })

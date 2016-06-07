@@ -10,43 +10,46 @@ var elasticUpdater = {
 
     start: function () {
         console.log("get downtime update...");
-        //Remove notify for scheduleur
-        readUpdate();
-        //setInterval(readUpdate, 10000);
+        //Remove notify for scheduleur     
+        setInterval(readUpdateTable, 10000);
     },
 
-}
-
-
-//TODO, reindex the content ? 
-function performUpdateDocument(updateID) {
-    return new Promise(function (resolve, reject) {
-        if (row.op === 'UPDATE' || row.op === "INSERT") {
-            db.one("SELECT document_name,document_id FROM document WHERE document_id = $1", updateID)
-                .then(function (documentRow) {
-                    if (row.op === "UPDATE") {
-                        resolve(elasticService.updateDocument(documentRow));
-                    } else {
-                        resolve(elasticService.createDocument(documentRow));
+    //daemon that do update every minute
+    readUpdateTable: function () {
+        return new Promise(function (resolve, reject) {
+            if (!elasticUpdater.curentUpdate) {
+                //dont't call update if another daemon is running
+                elasticUpdater.curentUpdate = true;
+                updateModel.getUpdates().then(function (rows) {
+                    actionPromises = [];
+                    for (var row in rows) {
+                        if (rows.hasOwnProperty(row)) {
+                            var element = rows[row];
+                            actionPromises.push(createActionUpdate(element));
+                        }
                     }
+                    //console.log("length of promiseArray " + actionPromises.length);
+                    Promise.all(actionPromises).then(function (values) {
+                        elasticUpdater.curentUpdate = false;
+                        resolve('updateDone');
+                    }).catch(function (err) {
+                        elasticUpdater.curentUpdate = false;
+                        reject(err.message || err);
+                    })
+                }).catch(function (err) {
+                    elasticUpdater.curentUpdate = false;
+                    reject(err.message || err);
                 })
-                .catch(function (error) {
-                    console.log(err);
-                    reject("ERROR:", error.message || error);
-                })
-        }
-        else if (row.op === "DELETE" || row.op == "TRUNCATE") {
-            resolve(elasticService.deleteDocument(row.update_id));
-        }
-        else {
-            reject("unknow row.op");
-        }
-    })
+            }
+            else {
+                reject("update already in progress")
+            }
+        })
+    }
 }
 
 //Label file ?
-function updateDocument(op, update_id, type_id) {
-
+function actionDocument(op, update_id, type_id) {
     var actionDefiner = new Promise(function (resolve, reject) {
         documentModel.getFileInfoById(update_id)
             .then(function (row_to_update) {
@@ -64,27 +67,30 @@ function updateDocument(op, update_id, type_id) {
                 }
             })
             .catch(function (err) {
-                console.log(err || err.message);
+                reject(err || err.message);
             })
     });
-    actionDefiner.then(function (message) {
-        console.log(message);
-        console.log(update_id + " " + type_id);
-        //check here
-        updateModel.deleteUpdate(update_id,type_id)
-            .catch(function (err) {
-                console.log(err.message || err);
-            })
-    }).catch(function (err) {
-        console.error(err.message || err);
-        //If delete fail undo index ?
+
+    return new Promise(function (resolve, reject) {
+        actionDefiner.then(function (message) {
+            //check here
+            updateModel.deleteUpdate(update_id, type_id)
+                .then(function () {
+                    resolve("zub");
+                })
+                .catch(function (err) {
+                    reject(err.message || err);
+                })
+        }).catch(function (err) {
+            reject(err.message || err);
+            //If delete fail undo index ?
+        })
     })
+
 
 }
 
-
-//Label file ?
-function updatePin(op, update_id, type_id) {
+function actionPin(op, update_id, type_id) {
     var actionDefiner = new Promise(function (resolve, reject) {
         //Get the ligne to update
         if (op == "I") {
@@ -96,7 +102,7 @@ function updatePin(op, update_id, type_id) {
             })
 
         } else if (op == "D" || op == "T" || op == "U") {
-            pinModel.getPinByID.then(function (row_to_update) {
+            pinModel.getPinInfoById(update_id).then(function (row_to_update) {
                 if (op == "U") {
                     resolve(elasticService.updatePin(row_to_update));
                 } else {
@@ -109,18 +115,17 @@ function updatePin(op, update_id, type_id) {
     });
 
     actionDefiner.then(function (message) {
-            console.log(message);
-            updateModel.deleteUpdate(update_id,type_id)
-                .catch(function (err) {
-                    console.log(err.message || err);
-                })
-        }).catch(function (err) {
-            console.error(err.message || err);
-            //If delete fail undo index ?
-        })
+        updateModel.deleteUpdate(update_id, type_id)
+            .catch(function (err) {
+                console.log(err.message || err);
+            })
+    }).catch(function (err) {
+        console.error(err.message || err);
+        //If delete fail undo index ?
+    })
 }
 
-function updatePinboard(op, update_id, type_id) {
+function actionPinboard(op, update_id, type_id) {
     var actionDefiner = new Promise(function (resolve, reject) {
         var action;
         //Get the ligne to update
@@ -145,7 +150,6 @@ function updatePinboard(op, update_id, type_id) {
 
     actionDefiner.then(function (action) {
         action.then(function (message) {
-            console.log(message);
             db.none("DELETE FROM public.update WHERE update_id = $1 AND type_id = $2  ", row_to_update.version_id, type_id)
         }).catch(function (err) {
             console.error(err.message || err);
@@ -155,57 +159,30 @@ function updatePinboard(op, update_id, type_id) {
     })
 }
 
-
-//daemon that do update every minute
-function readUpdate() {
-    console.log("call to update");
-    if (!elasticUpdater.curentUpdate) {
-        //dont't call update if another daemon is running
-        elasticUpdater.curentUpdate = true;
-        updateModel.getUpdates().then(function (rows) {
-            console.log(rows.length + "to update");
-            for (var row in rows) {
-                if (rows.hasOwnProperty(row)) {
-                    var element = rows[row];
-                    var op = element.op;
-                    var table_name = element.table_name;
-                    var type_id = element.type_id;
-                    console.log(table_name);
-                    switch (table_name) {
-                        case 'pin':
-                            updatePin(op, element.update_id, type_id);
-                            break;
-                        case 'pinboard':
-                            if (op != "INSERT") {
-                                updatePinboard(element.update_id, type_id);
-                            }
-                            break;
-
-                        case 'version':
-                            console.log('upFile');
-                            updateDocument(op, element.update_id, type_id);
-                            break;
-
-                        default:
-                            break;
-                    }
+function createActionUpdate(element) {
+    return new Promise(function (resolve, reject) {
+        var op = element.op;
+        var table_name = element.table_name;
+        var type_id = element.type_id;
+        switch (table_name) {
+            case 'pin':
+                resolve(actionPin(op, element.update_id, type_id));
+                break;
+            case 'pinboard':
+                if (op != "INSERT") {
+                    resolve(actionPinboard(element.update_id, type_id));
                 }
-                elasticUpdater.curentUpdate = false;
-            }
-        }).catch(function (err) {
-            console.log(err.message || err);
-            elasticUpdater.curentUpdate = false;
-        })
-    }
-    else {
-        console.log("update already in progress")
-    }
+                break;
+            case 'version':
+                resolve(actionDocument(op, element.update_id, type_id));
+                break;
 
-
-
-
+            default:
+                reject('Action unknow');
+                break;
+        }
+    })
 }
-
 
 module.exports = elasticUpdater;
 
