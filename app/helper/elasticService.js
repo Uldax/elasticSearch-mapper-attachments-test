@@ -39,6 +39,9 @@ var elasticService = {
             name: row.label
         }
 
+        //TODO : get last version if exist ,remove then create
+
+
         return new Promise(function (resolve, reject) {
             var requestData = elasticBuilder.createDocument(path, data);
             if (requestData) {
@@ -65,7 +68,8 @@ var elasticService = {
         var versionID = row.document_id;
         var fileName = row.document_name;
         return new Promise(function (resolve, reject) {
-            //ReindexDocument           
+            //ReindexDocument         
+            // TODO : reidex only if path change  
             var requestData = elasticBuilder.createDocument(fileName);
             if (requestData) {
                 client.update({

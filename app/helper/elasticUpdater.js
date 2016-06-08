@@ -29,13 +29,18 @@ var elasticUpdater = {
                         }
                     }
                     //console.log("length of promiseArray " + actionPromises.length);
-                    Promise.all(actionPromises).then(function (values) {
+                    // Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
+                    // la promesse all est rejetée immédiatement avec la valeur rejetée par la promesse en question, 
+                    Promise.all(actionPromises.map(reflect)).then(function (results) {
+                        var reject = results.filter(x => x.status === "rejected");
                         elasticUpdater.curentUpdate = false;
-                        resolve('updateDone');
-                    }).catch(function (err) {
-                        elasticUpdater.curentUpdate = false;
-                        reject(err.message || err);
+                        //TODO handle rejected
+                        resolve(reject);
                     })
+                        .catch(function (err) {
+                            elasticUpdater.curentUpdate = false;
+                            reject(err.message || err);
+                        })
                 }).catch(function (err) {
                     elasticUpdater.curentUpdate = false;
                     reject(err.message || err);
@@ -46,6 +51,12 @@ var elasticUpdater = {
             }
         })
     }
+}
+
+//regardless of if one promise has failed.
+function reflect(promise) {
+    return promise.then(function (v) { return { v: v, status: "resolved" } },
+        function (e) { return { e: e, status: "rejected" } });
 }
 
 //Label file ?
@@ -76,7 +87,7 @@ function actionDocument(op, update_id, type_id) {
             //check here
             updateModel.deleteUpdate(update_id, type_id)
                 .then(function () {
-                    resolve("zub");
+                    resolve();
                 })
                 .catch(function (err) {
                     reject(err.message || err);
@@ -169,7 +180,7 @@ function createActionUpdate(element) {
                 resolve(actionPin(op, element.update_id, type_id));
                 break;
             case 'pinboard':
-                if (op != "INSERT") {
+                if (op != "I") {
                     resolve(actionPinboard(element.update_id, type_id));
                 }
                 break;
