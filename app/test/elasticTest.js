@@ -31,7 +31,7 @@ var client = new elasticsearch.Client({
 });
 
 
-var myDocPath = "indexedDocuments/FEC.pdf";
+var myDocPath = "indexedDocuments/MORACedric_English_CV.pdf";
 
 function onError(err) {
     console.log(err.message || err);

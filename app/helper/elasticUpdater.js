@@ -11,7 +11,7 @@ var elasticUpdater = {
     start: function () {
         console.log("get downtime update...");
         //Remove notify for scheduleur     
-        setInterval(readUpdateTable, 10000);
+        setInterval(elasticUpdater.readUpdateTable, 10000);
     },
 
     //daemon that do update every minute

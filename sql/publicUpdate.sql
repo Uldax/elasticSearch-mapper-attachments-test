@@ -233,7 +233,4 @@ ON pinboard.vote_pin
 FOR EACH ROW  
 EXECUTE PROCEDURE on_change();
 
-INSERT INTO pinboard.pin(pinboard_id, label, user_id) VALUES (1, 'testPin', 1);
 
-INSERT INTO file.file (label, folder_id, user_id) VALUES ('test1', (SELECT folder_id FROM file.folder WHERE label ='indexedDocuments'), 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES (1, 'test version 1', 'indexedDocuments/departM2.pdf', 1);
