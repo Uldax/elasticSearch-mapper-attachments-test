@@ -85,6 +85,7 @@ var testModel = {
             var P1 = update.deleteUpdates();
             var P2 = document.deleteFiles();
             var P3 = pin.deletePins();
+            //TODO : delete user
             var promiseArray = [P1, P2, P3];
             //don't know why didn't work
             Promise.all(promiseArray)

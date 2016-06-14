@@ -1,4 +1,5 @@
-var conf = require('../config.js');
+"use strict";
+//Read scheduled update from database and execute thm all
 var pinModel = require('../models/pin.js');
 var updateModel = require('../models/update.js');
 var documentModel = require('../models/document.js');
@@ -7,11 +8,12 @@ var utils = require("./utils");
 
 var elasticUpdater = {
 
+    //Boolean use to know if we can update now or not
     curentUpdate: false,
 
+    //Previous use of notify/listen form pgsql but we choose to do schedule update
     start: function () {
-        console.log("get downtime update...");
-        //Remove notify for scheduleur     
+        console.log("get downtime update...");   
         setInterval(elasticUpdater.readUpdateTable, 10000);
     },
 

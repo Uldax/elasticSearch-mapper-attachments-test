@@ -1,50 +1,41 @@
+//TODO : add log data in every id
+"use strict";
 //Classe that consume builder to perform request to elastic serveur
+//All methode return a Promise with success message or error log from elasticServer
 var request = require("request"),
-    utils = require("./utils");
+    utils = require("./utils"),
+    elasticBuilder = require("./elasticBuilder"),
+conf = require("../config"),
+    elasticsearch = require('elasticsearch');
 
 //Conf parameters
-var conf = require("../config");
 var elasticSearchPort = conf.elastic.port,
     protocol = conf.elastic.protocol,
     serverIp = conf.elastic.serverIp,
-    indexName = "opus",
+    indexName = conf.elastic.mainIndex,
     typeName = "document",
-    folderName = "indexedDocuments";
-
-//ShortCut
-var elasticPath = indexName + "/" + typeName,
-    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort,       
-    elasticBuilder = require("./elasticBuilder");
-    
+    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort
 
 
-var elasticsearch = require('elasticsearch');
-var ejs = require('./elastic');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
     log: 'error'
 });
 
-//var pageNum = request.params.page;
-//var perPage = request.params.per_page;
+
 var elasticService = {
-    //Index document into elastic 
-    // Warning old version
-    //Return Promise
+    /*************** DOCUMENT  **************** */
     createDocument: function (row) {
         var path = row.path;
         var data = {
             document_id: row.file_id,
             version_id: row.version_id,
             log_data_id: row.log_data_id,
-            //TODO : name = file label not file version
+            //TODO : name = file label not file version label
             name: row.label
         }
-
-        //TODO : get last version if exist ,remove then create
-
-
-        return new Promise(function (resolve, reject) {   
+        //! fileSize > 104857600      
+        return new Promise(function (resolve, reject) {
             var requestData = elasticBuilder.createDocument(path, data);
             if (requestData) {
                 client.create({
@@ -60,10 +51,41 @@ var elasticService = {
             } else {
                 reject("no request data");
             }
-            //! fileSize > 104857600      
+
         });
     },
 
+    addGroupToDocument: function (group_id, document_id) {
+        var requestObject = elasticBuilder.addGroupToFile(group_id, document_id);
+        var options = {
+            method: 'POST',
+            url: baseURL + "/opus/document/_update_by_query",
+            json: requestObject,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        };
+        return new Promise(function (resolve, reject) {
+            request(options, function (err, response, body) {
+                if (!err) {
+                    if (response.statusCode === 200) {
+                        if (typeof body != undefined) {
+                            resolve(JSON.parse(body));
+                        }
+                    } else {
+                        reject(err);
+                    }
+                }
+            })
+        })
+    },
+
+    removeGroupToDocument: function (group_id, document_id) {
+
+    },
+
+    //In update we don't reindex the content of file :
+    //if the content change , there is a new version so it's insertDocument
     updateDocument: function (row) {
         //Get info from db 
         // format body
@@ -90,6 +112,7 @@ var elasticService = {
         })
     },
 
+    /*************** IMPORT  **************** */
     bulkPin: function (rows) {
         return new Promise(function (resolve, reject) {
             var body_json = elasticBuilder.bulkPin(rows);
@@ -103,26 +126,13 @@ var elasticService = {
                 });
             }
             else {
-                reject();
+                reject("No JSON for bulk");
             }
         })
     },
 
-    //With api
-    deleteDocument: function (versionID) {
-        return new Promise(function (resolve, reject) {
-            client.delete({
-                index: indexName,
-                type: 'document',
-                id: versionID
-            }).then(function (resp) {
-                resolve("Document with " + versionID + " delete");
-            }, function (err) {
-                reject(err.message || err);
-            });
-        })
-    },
 
+    /*************** PIN  **************** */
     createPin: function (row) {
         return new Promise(function (resolve, reject) {
             var requestData = elasticBuilder.createPin(row);
@@ -143,12 +153,7 @@ var elasticService = {
         });
     },
 
-    //Todo
     createPinBoard: function (row) {
-
-    },
-
-    deletePinBoard: function (id) {
 
     },
 
@@ -156,6 +161,36 @@ var elasticService = {
 
     },
 
+    addGroupToPin: function (group_id, pin_id) {
+        var options = {
+            method: 'POST',
+            url: baseURL + "/opus/document/_update_by_query",
+            json: objectMapping,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Transfer-Encoding': 'chunked'
+            }
+        };
+        return new Promise(function (resolve, reject) {
+            request(options, function (err, response, body) {
+                if (!err) {
+                    if (response.statusCode === 200) {
+                        if (typeof body != undefined) {
+                            resolve(JSON.parse(body));
+                        }
+                    } else {
+                        reject(err);
+                    }
+                }
+            })
+        })
+    },
+
+    removeGroupToPin: function (group_id, pin_id) {
+
+    },
+
+    /*************** SEARCH  **************** */
     search: function (buildOption) {
         //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
         return new Promise(function (resolve, reject) {
@@ -171,6 +206,8 @@ var elasticService = {
         });
     },
 
+    /*************** UTILS  **************** */
+    //Warning count nedd few sec before insert to give the right value
     countByType: function (type) {
         return new Promise(function (resolve, reject) {
             client.count({
@@ -190,29 +227,31 @@ var elasticService = {
         });
     },
 
-    addGroupToDocument : function(group_id,document_id){
-        var options = {
-            method: 'POST',
-            url: baseURL + "/opus/document/_update_by_query",
-            json: objectMapping
-        };
-        return new Promise(function (resolve, reject) {
-            request(options, function (err, response, body) {
-                if (!err) {
-                    if (response.statusCode === 200) {
-                        if (typeof body != undefined) {
-                            resolve(JSON.parse(body));
-                        }
-                    } else {
-                        reject(err);
-                    }
-                }
+    //Create first index and mapping for elastic
+    //TODO test
+    createIndex: function () {
+        //Allow use to do the promise one after the other
+        return Promise.resolve()
+            .then(function () {
+                return client.indices.exists({ index: "opus" })
             })
-        })
-    },
-
-    removeGroupToDocument : function(group_id, document_id){
-
+            .then(function (exist) {
+                if (exist) {
+                    return client.indices.delete({ index: "opus" })
+                } else return Promise.resolve()
+            })
+            .then(function () {
+                return client.indices.create({ index: "opus" });
+            })
+            .then(function () {
+                return client.indices.putMapping({ index: "opus", type: 'document', body: mapping.documentMapping });
+            })
+            .then(function () {
+                return client.indices.putMapping({ index: "opus", type: 'pin', body: mapping.pinMapping });
+            })
+            .catch(function (err) {
+                console.log(err.message || err);
+            });
     },
 
     countFromAnOtherWorld(type) {

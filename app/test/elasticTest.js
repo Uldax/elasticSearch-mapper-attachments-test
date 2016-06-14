@@ -27,7 +27,7 @@ var fileLabel = "superTest";
 var elasticsearch = require('elasticsearch');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'trace'
+    log: 'error'
 });
 
 

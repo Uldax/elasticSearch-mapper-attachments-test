@@ -1,8 +1,8 @@
+//Class for utils function
 var fs = require('fs');
 
 
 var utils = {
-
     extToType: {
         ".doc": "doc"
         , ".docx": "doc"
@@ -23,6 +23,7 @@ var utils = {
         return Math.floor(Math.random() * (high - low + 1) + low);
     },
 
+    //Format date for dateBased search
     getTodayDateFormat: function () {
         var today = new Date();
         var dd = today.getDate();
@@ -39,7 +40,7 @@ var utils = {
         return today;
     },
 
-    //Read the file name from folder and index them
+    //Read the file name from folder and do callback for everyone of them
     readFolder: function (dirname, callback, onError) {
         fs.readdir(dirname, function (err, filenames) {
             if (err) {
@@ -52,11 +53,13 @@ var utils = {
         });
     },
 
+    //Get extension from string
     getExt: function (path) {
         var i = path.lastIndexOf('.');
         return (i < 0) ? '' : path.substr(i);
     },
 
+    //get elastic type associate to extension 
     getType: function (path) {
         var ext = this.getExt(path);
         if (ext !== "" && this.extToType.hasOwnProperty(ext)) {
@@ -64,7 +67,7 @@ var utils = {
         } else return "unknown"
     },
 
-    //regardless of if one promise has failed.
+    //allow to continue promise.all regardless of if one promise has failed.
     reflect: function (promise) {
         return promise.then(function (v) { return { v: v, status: "resolved" } },
             function (e) { return { e: e, status: "rejected" } });

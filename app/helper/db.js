@@ -1,4 +1,3 @@
-
 var pgp = require("pg-promise")();
 var conf = require('../config.js');
 var connectionString = conf.db.pgsql;

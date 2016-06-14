@@ -1,3 +1,4 @@
+"use strict";
 //Class that build request to send to elastic search serveur
 
 /*
@@ -70,9 +71,8 @@ POST /opus/_search
 
 */
 
-
-
 //TODO : add date , exact , type  
+//Param send to search endPoint
 const ALL_RESULTS = 0;
 const EXACT_WORD = 1;
 const RELEVANCE = 0;
@@ -84,6 +84,7 @@ const BULLETIN_BOARD = 1;
 const PDF = 2;
 const DOC = 3;
 
+//TODO move to conf
 const ALLOWED_TYPE = [PDF, DOC, BULLETIN_BOARD];
 
 const REQUEST_STRING_FIELD = "requestString";
@@ -96,18 +97,10 @@ const DATE_BEGIN = "begin";
 const DATE_END = "end";
 
 
-var utils = require("./utils");
-var ejs = require('./elastic');
-
-var folderName = "indexedDocuments";
-
-var elasticSearchPort = "9200",
-    protocol = "http",
-    indexName = "opus",
-    typeName = "document",
-    serverIp = "localhost",
-    folderName = "indexedDocuments";
-
+var ejs = require('./elastic'),
+    utils = require("./utils"),
+    conf = require("../config"),
+    indexName = conf.elastic.mainIndex;
 
 /*
 Param{
@@ -192,7 +185,7 @@ var elasticBuilder = {
                     "document_id": data.document_id,
                     "version_id": data.version_id,
                     //if not set , add values instead of add to array
-                    "document_groups_ids" : []
+                    "document_groups_ids": []
                 }
                 return requestData;
             }
@@ -200,6 +193,25 @@ var elasticBuilder = {
                 console.log(err.message || err);
                 return;
             }
+        },
+
+        //Files are in config/script under elasticSearch folder
+        addGroupToFile: function (group_id, document_id) {
+            var requestData = {
+                "script": {
+                    "file": addGroupFile,
+                    "params": {
+                        "new_group": group_id
+                    }
+                },
+                "query": {
+                    "term": {
+                        "document_id": document_id
+                    }
+                }
+
+            }
+            return requestData;
         },
 
         createPin: function (row) {
@@ -235,7 +247,7 @@ var elasticBuilder = {
                         pin_label: pin_label_value,
                         pinboard_label: pinboard_label_value,
                         pin_vote: pin_vote_value,
-                        pin_id : pin_id_value
+                        pin_id: pin_id_value
                     }
                 );
             }

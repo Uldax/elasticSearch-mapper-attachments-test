@@ -1,38 +1,15 @@
-//Conf parameters
-elasticSearchPort = "9200",
-    protocol = "http",
-    indexName = "opus",
-    typeName = "document",
-    serverIp = "localhost",
-    folderName = "indexedDocuments",
-    connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/opus';
+"use strict";
+//Script for the first user of elastic 
+// Called with import parameter : npm bin/www import
+//Create index/Mapping and index data from database into elastic
+//Current data handle : file / version / pinboard / layout / pin
 
-//Module
-request = require("request"),
-    utils = require("./utils.js"),
-    // mapping = require("./mapping.js"),
-    pg = require('pg'),
-    pgp = require('pg-promise')(),
-    db = pgp(connectionString);
-elasticService = require('./elasticService.js')
 
-//ShortCut
-elasticPath = indexName + "/" + typeName,
-    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
-
-//Option for resquest
-options = {
-    method: 'POST',
-    url: baseURL + "/" + elasticPath + "/",
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Transfer-Encoding': 'chunked'
-    }
-};
-
-var documentModel = require('../models/document.js');
-var pinModel = require('../models/pin.js');
-var utils = require('./utils.js')
+var utils = require("./utils.js"),
+    elasticService = require('./elasticService.js'),
+    documentModel = require('../models/document.js'),
+    pinModel = require('../models/pin.js'),
+    utils = require('./utils.js');
 
 var elasticImporter = {
 
@@ -54,8 +31,6 @@ var elasticImporter = {
     },
 
 }
-
-//TODO add createIndex
 
 function bulk() {
     //create json bulk file from db
