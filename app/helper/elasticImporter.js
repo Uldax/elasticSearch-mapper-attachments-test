@@ -32,177 +32,36 @@ options = {
 
 var documentModel = require('../models/document.js');
 var pinModel = require('../models/pin.js');
+var utils = require('./utils.js')
 
 var elasticImporter = {
 
     start: function () {
         console.log("Time to import");
-        // Remove notify for scheduleur
         bulk().then(function (message) {
-            console.log(message);
-        })
-        .catch(function (error){
-            console.log(error.message || error);
-        });
-        importFiles().then(function (message) {
             console.log(message);
         })
             .catch(function (error) {
                 console.log(error.message || error);
             });
-        //setInterval(readUpdate, 10000);
+        importFiles()
+            .then(function (message) {
+                console.log(message);
+            })
+            .catch(function (error) {
+                console.log(error.message || error);
+            });
     },
 
 }
 
-//Function that create index and associate mapping for attachement file
-function createIndex() {
-
-    return new Promise(function (resolve, reject) {
-        //Create the index
-        options = {
-            method: 'PUT',
-            url: baseURL + "/" + indexName
-        };
-        request(options, function (err, response, body) {
-            if (!err && response.statusCode === 200) {
-                //Create the mapping
-                objectMapping = mapping.fileMapping;
-                options = {
-                    method: 'PUT',
-                    url: baseURL + "/" + elasticPath + "/_mapping",
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    json: objectMapping,
-                };
-                request(options, function (err, response, body) {
-                    if (!err && response.statusCode === 200) {
-                        resolve("Success creation of index");
-                    } else {
-                        console.log("Error in creation of mapping : did you install the mapping attachment pluggin ? Status code = " + response.statusCode);
-                        reject(body);
-                    }
-                });
-            }
-            else {
-                console.log("Create index error :");
-                if (err) {
-                    reject(err);
-                } else {
-                    reject(body);
-                }
-            }
-        });
-    });
-
-}
-
-//Clean all index and his content
-function cleanALL() {
-    return new Promise(function (resolve, reject) {
-        //Option for resquest
-        options = {
-            method: 'DELETE',
-            url: baseURL + "/" + indexName
-        };
-
-        request(options, function (err, response, body) {
-            if (!err && response.statusCode === 200) {
-                console.log("index delete with success");
-            } else {
-                console.log("Error in delete index");
-                console.log(body);
-            }
-        });
-
-
-        db.tx(function (t) {
-            // this = t = transaction protocol context;
-            // this.ctx = transaction config + state context;
-            return t.batch([
-                t.none("DELETE FROM document_privilege"),
-                t.none("DROP TRIGGER IF EXISTS account_change_trigger ON document"),
-                t.none("DELETE FROM public.update"),
-                t.none("DELETE FROM document"),
-                t.none("CREATE TRIGGER account_change_trigger " +
-                    "AFTER INSERT OR UPDATE OR DELETE " +
-                    "ON document " +
-                    "FOR EACH ROW " +
-                    "EXECUTE PROCEDURE on_account_change()")
-            ]);
-        })
-            .then(function (data) {
-                resolve("DB clean");
-            })
-            .catch(function (error) {
-                reject("ERROR:", error.message || error);
-            });
-
-    });
-
-}
-
-function cleanDB() {
-    return new Promise(function (resolve, reject) {
-        db.tx(function (t) {
-            // this = t = transaction protocol context;
-            // this.ctx = transaction config + state context;
-            return t.batch([
-                t.none("DELETE FROM document_privilege"),
-                t.none("DELETE FROM document"),
-            ]);
-        })
-            .then(function (data) {
-                resolve("DB clean");
-            })
-            .catch(function (error) {
-                console.log(error);
-
-                reject("ERROR in clear:", error.message || error);
-            });
-    });
-
-}
-
-function justDocumentDB(filename) {
-    //Add the pdf in database using client pool
-    //Tasks are to simplify the use of Shared Connections when executing a chain of queries
-    db.task(function (t) {
-        // this = t = task protocol context;
-        // this.ctx = task config + state context;
-        return t.one("INSERT INTO document(document_name,application_id) values($1, $2) RETURNING document_id;", [filename, 1])
-            .then(function (doc) {
-                readPrivilege = utils.randomIntInc(1, 3);
-                return t.none("INSERT INTO document_privilege(privilege_id, document_id) values($1, $2)", [readPrivilege, doc.document_id]);
-            });
-    })
-        .then(function (events) {
-            console.log("Document " + filename + " inserted in DB");
-        })
-        .catch(function (error) {
-            console.log("ERROR:", error.message || error);
-        });
-
-}
-
-function crawl() {
-    utils.readFolder("../" + folderName, justDocumentDB, function (err) {
-        console.log("Error occured")
-        console.log(err);
-    });
-}
+//TODO add createIndex
 
 function bulk() {
     //create json bulk file from db
     //sent in /_bulk
     return new Promise(function (resolve, reject) {
-        db.any("SELECT pinboard.pin.pin_id, pinboard.layout.label AS label_layout, pinboard.pinboard.label AS label_Pinboard, " +
-            "pinboard.pin.label AS label_pin, pinboard.vote_pin.vote " +
-            "FROM pinboard.layout " +
-            "INNER JOIN pinboard.pinboard ON pinboard.layout.layout_id = pinboard.pinboard.layout_id " +
-            "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
-            "INNER JOIN pinboard.vote_pin ON pinboard.pin.pin_id = pinboard.vote_pin.pin_id;")
+        pinModel.getAllPinInfo()
             .then(function (rows) {
                 if (rows.length != 0) {
                     console.log("Call to service");
@@ -217,7 +76,7 @@ function bulk() {
 
                 }
                 else {
-                    console.log("No pins in DB");
+                    reject("No pins in DB");
                 }
             })
             .catch(function (error) {
@@ -227,33 +86,31 @@ function bulk() {
 }
 
 function importFiles() {
-    var path;
     return new Promise(function (resolve, reject) {
-        documentModel.getFiles()
+        documentModel.getFilesInfo()
             .then(function (rows) {
                 var actionPromises = [];
                 if (rows.length != 0) {
                     for (var row = 0; row < rows.length; row++) {
-                        path = rows[row].pathpart1 + rows[row].label;
-                        rows[row].path = path;
                         actionPromises.push(elasticService.createDocument(rows[row]));
                     }
-                    Promise.all(actionPromises).then(function (values) {
-                        elasticUpdater.curentUpdate = false;
-                        resolve('createDone');
-                    }).catch(function (err) {
-                        elasticUpdater.curentUpdate = false;
-                        reject(err.message || err);
-                    })
+                    Promise.all(actionPromises.map(utils.reflect))
+                        .then(function (results) {
+                            console.log(results);
+                            var rejectResult = results.filter(x => x.status === "rejected");
+                            elasticUpdater.curentUpdate = false;
+                            //TODO handle rejected
+                            resolve(rejectResult);
+                        })
                         .catch(function (err) {
                             elasticUpdater.curentUpdate = false;
                             reject(err.message || err);
                         })
                 }
-                else{
-                        console.log("No files in DB");
-                    }
-                })
+                else {
+                    reject("No files in DB");
+                }
+            })
             .catch(function (error) {
                 reject(error.message || error);
             })

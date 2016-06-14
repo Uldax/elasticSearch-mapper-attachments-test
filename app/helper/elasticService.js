@@ -36,6 +36,7 @@ var elasticService = {
         var data = {
             document_id: row.file_id,
             version_id: row.version_id,
+            log_data_id: row.log_data_id,
             //TODO : name = file label not file version
             name: row.label
         }
@@ -43,14 +44,11 @@ var elasticService = {
         //TODO : get last version if exist ,remove then create
 
 
-        return new Promise(function (resolve, reject) {
-            
+        return new Promise(function (resolve, reject) {   
             var requestData = elasticBuilder.createDocument(path, data);
-            
             if (requestData) {
-                console.log(data.document_id);
                 client.create({
-                    id: data.document_id,
+                    id: data.log_data_id,
                     index: indexName,
                     type: 'document',
                     body: requestData

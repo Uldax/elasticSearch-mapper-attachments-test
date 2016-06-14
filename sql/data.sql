@@ -49,12 +49,12 @@ INSERT INTO file.file (label, folder_id, user_id) VALUES ('MORACedric_Cover_lett
 INSERT INTO file.file (label, folder_id, user_id) VALUES ('MORACedric_English_CV.pdf', (SELECT folder_id FROM file.folder WHERE label='paul'), 1);
 
 --On crée les versions qu'on associe avec le bon fichier
-INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='departM2.pdf'), 'first version', 'indexedDocuments/cedric/', 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_Cover_letter_Sherbrooke.docx'), 'first version', 'indexedDocuments/cedric/', 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_English_CV.docx'), 'first version', 'indexedDocuments/cedric/', 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_Lettre_motiv_Canada.docx'), 'first version', 'indexedDocuments/paul/', 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORACedric_Cover_letter_Sherbrooke.pdf'), 'first version', 'indexedDocuments/paul/', 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORACedric_English_CV.pdf'), 'first version', 'indexedDocuments/paul/', 1);
+INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='departM2.pdf'), 'first version', 'indexedDocuments/cedric/departM2.pdf', 1);
+INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_Cover_letter_Sherbrooke.docx'), 'first version', 'indexedDocuments/cedric/MORA_Cedric_Cover_letter_Sherbrooke.docx', 1);
+INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_English_CV.docx'), 'first version', 'indexedDocuments/cedric/MORA_Cedric_English_CV.docx', 1);
+INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_Lettre_motiv_Canada.docx'), 'first version', 'indexedDocuments/paul/MORA_Cedric_Lettre_motiv_Canada.docx', 1);
+INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORACedric_Cover_letter_Sherbrooke.pdf'), 'first version', 'indexedDocuments/paul/MORACedric_Cover_letter_Sherbrooke.pdf', 1);
+INSERT INTO file.version (file_id, label, path, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORACedric_English_CV.pdf'), 'first version', 'indexedDocuments/paul/MORACedric_English_CV.pdf', 1);
 
 ------------------------------------------------------------------------------------
 --                     BABILLARDS

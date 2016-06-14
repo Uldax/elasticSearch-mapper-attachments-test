@@ -226,14 +226,16 @@ var elasticBuilder = {
                 var pin_label_value = rows[row].label_pin;
                 var pinboard_label_value = rows[row].label_pinboard;
                 var pin_vote_value = rows[row].vote;
+                var log_data_id_value = rows[row].log_data_id;
 
                 myJson.push(
-                    { index: { _index: indexName, _type: 'pin', _id: pin_id_value } },
+                    { index: { _index: indexName, _type: 'pin', _id: log_data_id_value } },
                     {
                         layout_label: layout_label_value,
                         pin_label: pin_label_value,
                         pinboard_label: pinboard_label_value,
-                        pin_vote: pin_vote_value
+                        pin_vote: pin_vote_value,
+                        pin_id : pin_id_value
                     }
                 );
             }
