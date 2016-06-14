@@ -2,14 +2,14 @@ var fs = require('fs');
 
 
 var utils = {
-    
-     extToType : {
-        ".doc"      : "doc"
-        , ".docx"   : "doc"
-        , ".pdf"    : "pdf"
-        , ".pptx"   : "ppt"
+
+    extToType: {
+        ".doc": "doc"
+        , ".docx": "doc"
+        , ".pdf": "pdf"
+        , ".pptx": "ppt"
     },
-    
+
     // function to encode file data to base64 encoded string
     base64_encode: function (file) {
         // read binary data
@@ -35,7 +35,7 @@ var utils = {
             mm = '0' + mm
         }
         //today = yyyy + '/' + mm + '/' + dd;
-        today = dd+ '/' + mm + '/' + yyyy;
+        today = dd + '/' + mm + '/' + yyyy;
         return today;
     },
 
@@ -51,17 +51,23 @@ var utils = {
             });
         });
     },
-    
+
     getExt: function (path) {
         var i = path.lastIndexOf('.');
         return (i < 0) ? '' : path.substr(i);
     },
-    
-    getType : function(path){
+
+    getType: function (path) {
         var ext = this.getExt(path);
-        if( ext !== "" && this.extToType.hasOwnProperty(ext)){
+        if (ext !== "" && this.extToType.hasOwnProperty(ext)) {
             return this.extToType[ext];
         } else return "unknown"
+    },
+
+    //regardless of if one promise has failed.
+    reflect: function (promise) {
+        return promise.then(function (v) { return { v: v, status: "resolved" } },
+            function (e) { return { e: e, status: "rejected" } });
     }
 }
 
