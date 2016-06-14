@@ -24,21 +24,25 @@ var mapping = {
                         "language": { "store": "yes" }
                     }
                 },
-                ///Custum here
                 "document_type": {
                     "type": "string"
                 },
                 "insertDate": {
-                    //"store": "yes",
                     "type": "date",
                     "format": "dd/MM/yyyy"
+                },
+                "file_label" : {
                 },
                 "document_id": {
                     "type": "long"
                 },
                 "version_id": {
                     "type": "long"
-                }
+                },
+                "document_groups_ids": {
+                    "type": "long"
+                },
+                "insert_by" :{}
             }
         }
     },
@@ -61,6 +65,9 @@ var mapping = {
                 },
                 "pinboard_label": {
                     "type": "string"
+                },
+                "pin_groups_ids": {
+                    "type": "long"
                 }
             }
         }

@@ -1,0 +1,1 @@
+ctx._source.document_groups_ids+=new_group

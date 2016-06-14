@@ -3,6 +3,7 @@ var pinModel = require('../models/pin.js');
 var updateModel = require('../models/update.js');
 var documentModel = require('../models/document.js');
 var elasticService = require("./elasticService");
+var utils = require("./utils");
 
 var elasticUpdater = {
 
@@ -29,13 +30,18 @@ var elasticUpdater = {
                         }
                     }
                     //console.log("length of promiseArray " + actionPromises.length);
-                    Promise.all(actionPromises).then(function (values) {
+                    // Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
+                    // la promesse all est rejetée immédiatement avec la valeur rejetée par la promesse en question, 
+                    Promise.all(actionPromises.map(utils.reflect)).then(function (results) {
+                        var reject = results.filter(x => x.status === "rejected");
                         elasticUpdater.curentUpdate = false;
-                        resolve('updateDone');
-                    }).catch(function (err) {
-                        elasticUpdater.curentUpdate = false;
-                        reject(err.message || err);
+                        //TODO handle rejected
+                        resolve(reject);
                     })
+                        .catch(function (err) {
+                            elasticUpdater.curentUpdate = false;
+                            reject(err.message || err);
+                        })
                 }).catch(function (err) {
                     elasticUpdater.curentUpdate = false;
                     reject(err.message || err);
@@ -47,6 +53,8 @@ var elasticUpdater = {
         })
     }
 }
+
+
 
 //Label file ?
 function actionDocument(op, update_id, type_id) {
@@ -76,7 +84,7 @@ function actionDocument(op, update_id, type_id) {
             //check here
             updateModel.deleteUpdate(update_id, type_id)
                 .then(function () {
-                    resolve("zub");
+                    resolve();
                 })
                 .catch(function (err) {
                     reject(err.message || err);
@@ -159,6 +167,33 @@ function actionPinboard(op, update_id, type_id) {
     })
 }
 
+//No update
+function actionFile_Group(op, file_id, group_id, type_id) {
+    var actionDefiner = new Promise(function (resolve, reject) {
+        var action;
+        //Get the ligne to update
+
+        if (op === "I") {
+            action = resolve(elasticService.addGroupToDocument(group_id, document_id));
+        } else if (op === "D" || op == "T") {
+            action = resolve(elasticService.removeGroupToDocument(group_id, document_id));
+        } else {
+            reject("unknow op");
+        }
+    });
+
+    actionDefiner.then(function (action) {
+        action.then(function (message) {
+            db.none("DELETE FROM public.update WHERE update_id = $1 AND update_composite_id = $2 type_id = $3  ", file_id,group_id, type_id)
+        }).catch(function (err) {
+            console.error(err.message || err);
+            //If delete fail undo index ?
+        })
+
+    })
+
+}
+
 function createActionUpdate(element) {
     return new Promise(function (resolve, reject) {
         var op = element.op;
@@ -169,12 +204,16 @@ function createActionUpdate(element) {
                 resolve(actionPin(op, element.update_id, type_id));
                 break;
             case 'pinboard':
-                if (op != "INSERT") {
+                if (op != "I") {
                     resolve(actionPinboard(element.update_id, type_id));
                 }
                 break;
             case 'version':
                 resolve(actionDocument(op, element.update_id, type_id));
+                break;
+
+            case 'file_group':
+                resolve(actionFile_Group(op, element.update_id, element.update_composite_id, type_id));
                 break;
 
             default:
