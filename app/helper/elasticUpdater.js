@@ -3,6 +3,7 @@ var pinModel = require('../models/pin.js');
 var updateModel = require('../models/update.js');
 var documentModel = require('../models/document.js');
 var elasticService = require("./elasticService");
+var utils = require("./utils");
 
 var elasticUpdater = {
 
@@ -11,7 +12,7 @@ var elasticUpdater = {
     start: function () {
         console.log("get downtime update...");
         //Remove notify for scheduleur     
-        setInterval(readUpdateTable, 10000);
+        setInterval(elasticUpdater.readUpdateTable, 10000);
     },
 
     //daemon that do update every minute
@@ -31,7 +32,7 @@ var elasticUpdater = {
                     //console.log("length of promiseArray " + actionPromises.length);
                     // Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
                     // la promesse all est rejetée immédiatement avec la valeur rejetée par la promesse en question, 
-                    Promise.all(actionPromises.map(reflect)).then(function (results) {
+                    Promise.all(actionPromises.map(utils.reflect)).then(function (results) {
                         var reject = results.filter(x => x.status === "rejected");
                         elasticUpdater.curentUpdate = false;
                         //TODO handle rejected
@@ -53,11 +54,7 @@ var elasticUpdater = {
     }
 }
 
-//regardless of if one promise has failed.
-function reflect(promise) {
-    return promise.then(function (v) { return { v: v, status: "resolved" } },
-        function (e) { return { e: e, status: "rejected" } });
-}
+
 
 //Label file ?
 function actionDocument(op, update_id, type_id) {
@@ -170,6 +167,33 @@ function actionPinboard(op, update_id, type_id) {
     })
 }
 
+//No update
+function actionFile_Group(op, file_id, group_id, type_id) {
+    var actionDefiner = new Promise(function (resolve, reject) {
+        var action;
+        //Get the ligne to update
+
+        if (op === "I") {
+            action = resolve(elasticService.addGroupToDocument(group_id, document_id));
+        } else if (op === "D" || op == "T") {
+            action = resolve(elasticService.removeGroupToDocument(group_id, document_id));
+        } else {
+            reject("unknow op");
+        }
+    });
+
+    actionDefiner.then(function (action) {
+        action.then(function (message) {
+            db.none("DELETE FROM public.update WHERE update_id = $1 AND update_composite_id = $2 type_id = $3  ", file_id,group_id, type_id)
+        }).catch(function (err) {
+            console.error(err.message || err);
+            //If delete fail undo index ?
+        })
+
+    })
+
+}
+
 function createActionUpdate(element) {
     return new Promise(function (resolve, reject) {
         var op = element.op;
@@ -186,6 +210,10 @@ function createActionUpdate(element) {
                 break;
             case 'version':
                 resolve(actionDocument(op, element.update_id, type_id));
+                break;
+
+            case 'file_group':
+                resolve(actionFile_Group(op, element.update_id, element.update_composite_id, type_id));
                 break;
 
             default:

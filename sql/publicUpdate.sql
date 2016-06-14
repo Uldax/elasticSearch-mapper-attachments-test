@@ -1,6 +1,7 @@
 ﻿DROP TABLE IF EXISTS public.update;
 CREATE TABLE public.update(
 	update_id SERIAL NOT NULL ,
+    update_composite_id SERIAL NOT NULL ,
 	type_id   INT   ,
 	op        CHAR (1)  NOT NULL ,
 	updated   TIMESTAMP  NOT NULL ,
@@ -21,6 +22,7 @@ DECLARE
     up_id integer;
     t_id  integer;
     opcode Char(1);
+    old_opcode Char(1);
 BEGIN    
     --tableKey := 'pin_id';
     IF TG_OP = 'DELETE' OR TG_OP = 'TRUNCATE' THEN
@@ -36,8 +38,8 @@ BEGIN
     ELSE 
         up_id := NEW.pin_id;
     END IF;
-    -- Check if there si already an update  
-    IF EXISTS (SELECT 1 FROM public.update
+    -- Check if there si already an update or insert 
+    IF EXISTS (SELECT public.update.op INTO old_opcode FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
         WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
         THEN
@@ -97,6 +99,48 @@ $BODY$
   COST 100;
 ALTER FUNCTION on_version_change()
   OWNER TO superopus;
+
+
+-- document_ groupe triger
+CREATE OR REPLACE FUNCTION on_document_group_change()
+  RETURNS trigger AS
+$BODY$
+DECLARE
+    file_id integer;
+    group_id integer;
+    t_id  integer;
+    opcode Char(1);
+BEGIN
+     
+    --tableKey := 'pin_id';
+    IF TG_OP = 'DELETE' OR TG_OP = 'TRUNCATE' THEN
+        opcode := 'D';
+    ELSIF TG_OP = 'UPDATE' THEN 
+        opcode := 'U';
+    ELSIF TG_OP = 'INSERT' THEN
+        opcode := 'I';    
+    END IF;
+    IF NEW.file_id IS NULL THEN
+        file_id := OLD.file_id;
+        group_id := OLD.group_id;
+    ELSE 
+        file_id := NEW.file_id;
+        group_id := NEW.group_id;
+    END IF;
+
+    SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
+    INSERT INTO public.update (update_id, update_composite_id, type_id, op, updated) VALUES (file_id, group_id,t_id,opcode, now());
+        
+    RETURN NULL;
+END;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION on_document_group_change()
+  OWNER TO superopus;
+
+
+
 
 --pinboard trigger
 
@@ -200,12 +244,20 @@ DROP TRIGGER IF EXISTS pinboard_change_trigger ON pinboard.pinboard;
 DROP TRIGGER IF EXISTS pin_change_trigger ON pinboard.pin;
 DROP TRIGGER IF EXISTS layout_change_trigger ON pinboard.layout;
 DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin;
+DROP TRIGGER IF EXISTS on_document_group_change ON file.file_group;
 
 CREATE TRIGGER version_change_trigger 
 AFTER INSERT OR UPDATE OR DELETE  
 ON file.version  
 FOR EACH ROW  
 EXECUTE PROCEDURE on_version_change();
+
+
+CREATE TRIGGER documnet_group_change_trigger 
+AFTER INSERT OR UPDATE OR DELETE  
+ON file.file_group  
+FOR EACH ROW  
+EXECUTE PROCEDURE on_document_group_change();
 
 
 CREATE TRIGGER pinboard_change_trigger 
@@ -233,7 +285,4 @@ ON pinboard.vote_pin
 FOR EACH ROW  
 EXECUTE PROCEDURE on_change();
 
-INSERT INTO pinboard.pin(pinboard_id, label, user_id) VALUES (1, 'testPin', 1);
 
-INSERT INTO file.file (label, folder_id, user_id) VALUES ('test1', (SELECT folder_id FROM file.folder WHERE label ='indexedDocuments'), 1);
-INSERT INTO file.version (file_id, label, path, user_id) VALUES (1, 'test version 1', 'indexedDocuments/departM2.pdf', 1);

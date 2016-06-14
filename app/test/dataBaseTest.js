@@ -38,7 +38,7 @@ describe('Database Update', function () {
   describe('Document', function () {
     it("should add entry 'I' into update when file insert", function (done) {
       //console.log(document.insertFileVersion());
-      document.insertFileInFolder("root", fileLabel, "indexedDocument/api.pdf").then(function () {
+      document.insertFileInFolder("root", fileLabel, "indexedDocument/departM2.pdf").then(function () {
         update.getUpdates().then(function (rows) {
           rows.should.have.length(1);
           rows[0].op.should.equal('I');
@@ -51,7 +51,7 @@ describe('Database Update', function () {
 
     it("should add entry 'I' into update when new file version insert for the same file", function (done) {
       //TODO can be better here
-      document.insertFileVersionByFileLabel(fileLabel, "indexedDocument/api2.pdf").then(function () {
+      document.insertFileVersionByFileLabel(fileLabel, "indexedDocument/MORACedric_English_CV.pdf").then(function () {
         update.getUpdates().then(function (rows) {
           rows.should.have.length(2);
           rows[1].op.should.equal('I');

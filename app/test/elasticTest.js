@@ -27,12 +27,14 @@ var fileLabel = "superTest";
 var elasticsearch = require('elasticsearch');
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'error'
+    log: 'trace'
 });
+
 
 
 var myDocPath = "indexedDocuments/FEC.pdf";
 var myDoc2Path = "indexedDocuments/essai.docx";
+
 
 
 function onError(err) {
@@ -78,8 +80,6 @@ function clean_all() {
             return createIndex()
         })
 }
-
-
 
 describe('Elastic Search', function () {
     before(function (done) {
@@ -148,7 +148,7 @@ describe('Elastic Search', function () {
                 });
         })
 
-
+        it('Updater should remove staged error after X run')
 
         describe('Document update', function () {
             before(function (done) {
@@ -226,7 +226,7 @@ describe('Elastic Search', function () {
                                 body.count.should.equal(1);
                                 done();
                             })
-                        }, 800);
+                        }, 1000);
                     })
                     .catch(function (err) {
                         console.log(err.message || err);
@@ -234,12 +234,16 @@ describe('Elastic Search', function () {
                     });
             })
 
+            it("If Double update on same file just 1 update")
+
             it("Document update version stay the same number in elastic")
+
+            it("Multiple update with file label change")
         })
 
         describe('Multi Document update', function () {
 
-            it("Multiple Document insert should remove update after tracker and add field in elastic")
+            it("Multiple Document insert should remove update after tracker and add multiple field in elastic")
 
             it("Multiple new file version should remove update after tracker and remove then add field in elastic")
 
@@ -247,9 +251,22 @@ describe('Elastic Search', function () {
         })
 
         describe('Pinboard update', function () {
+            it("Pinboard insert do nothing")
+            it("Pinboard update must update all pin concerned in elastic")
+            it("Pinboard unindex");
         })
 
+        //Like document
         describe('Pin update', function () {
+            it("Pin insert should remove update after tracker and add field in elastic");
+            it("Pin update should remove update after tracker and keep same number in elastic");
+            it("Pin unindex");
+        })
+
+        describe('Layout update', function () {
+            it("Layout insert do nothing")
+            it("Layout update must update all pin concerned in elastic")
+            it("Layout unindex");
         })
 
 

@@ -36,6 +36,7 @@ var elasticService = {
         var data = {
             document_id: row.file_id,
             version_id: row.version_id,
+            //TODO : name = file label not file version
             name: row.label
         }
 
@@ -186,6 +187,31 @@ var elasticService = {
             // undocumented params are appended to the query string
             hello: "elasticsearch"
         });
+    },
+
+    addGroupToDocument : function(group_id,document_id){
+        var options = {
+            method: 'POST',
+            url: baseURL + "/opus/document/_update_by_query",
+            json: objectMapping
+        };
+        return new Promise(function (resolve, reject) {
+            request(options, function (err, response, body) {
+                if (!err) {
+                    if (response.statusCode === 200) {
+                        if (typeof body != undefined) {
+                            resolve(JSON.parse(body));
+                        }
+                    } else {
+                        reject(err);
+                    }
+                }
+            })
+        })
+    },
+
+    removeGroupToDocument : function(group_id, document_id){
+
     },
 
     countFromAnOtherWorld(type) {
