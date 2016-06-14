@@ -40,13 +40,16 @@ var elasticService = {
         }
 
         return new Promise(function (resolve, reject) {
+            
             var requestData = elasticBuilder.createDocument(path, data);
+            
             if (requestData) {
+                console.log(data.document_id);
                 client.create({
+                    id: data.document_id,
                     index: indexName,
                     type: 'document',
-                    body: requestData,
-                    _id: data.document_id
+                    body: requestData
                 }).then(function (resp) {
                     resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
                 }, function (err) {

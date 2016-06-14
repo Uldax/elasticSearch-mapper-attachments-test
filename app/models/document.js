@@ -16,6 +16,11 @@ var documentModel = {
         return db.one('SELECT version_id,label,valid,path,file_id FROM file.version WHERE version_id = $1', version_id);
     },
 
+    getFiles: function (){
+        return db.any('SELECT file.file.file_id, file.file.label, file.version.path AS pathPart1, file.version.version_id FROM file.file ' +
+                        'INNER JOIN file.version ON file.file.file_id = file.version.file_id');
+    },
+    
     //First document insert
     insertFileInFolder: function (folder_name, file_name, file_path) {
         return new Promise(function (resolve, reject) {

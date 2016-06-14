@@ -55,7 +55,6 @@ function postCall(evt) {
     //     .fail(function () {
     //         alert("error");
     //     })
-
     var myObject = {
         requestString: $("#inputSearch")[0].value,
         userAuth: $("#userPrivilege")[0].value,
@@ -76,7 +75,7 @@ function postCall(evt) {
         data: myObject,
         complete: function (resultat, statut) {
             console.log(resultat);
-            readAndDisplayData(resultat.responseJSON);
+            readAndDisplayData(resultat);
         },
 
         error: function (resultat, statut, erreur) {
@@ -115,7 +114,6 @@ function readAndDisplayData(data) {
     $(".noResult").remove();
     $("#resultPanel").hide();
     var myObject = data;
-    console.log(data);
     var nom = "";
     var text = "";
     if (myObject.hasOwnProperty("error")) {

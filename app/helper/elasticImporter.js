@@ -10,7 +10,7 @@ elasticSearchPort = "9200",
 //Module
 request = require("request"),
     utils = require("./utils.js"),
-   // mapping = require("./mapping.js"),
+    // mapping = require("./mapping.js"),
     pg = require('pg'),
     pgp = require('pg-promise')(),
     db = pgp(connectionString);
@@ -30,17 +30,26 @@ options = {
     }
 };
 
+var documentModel = require('../models/document.js');
+var pinModel = require('../models/pin.js');
+
 var elasticImporter = {
 
     start: function () {
         console.log("Time to import");
-        //Remove notify for scheduleur
+        // Remove notify for scheduleur
         bulk().then(function (message) {
             console.log(message);
         })
         .catch(function (error){
             console.log(error.message || error);
         });
+        importFiles().then(function (message) {
+            console.log(message);
+        })
+            .catch(function (error) {
+                console.log(error.message || error);
+            });
         //setInterval(readUpdate, 10000);
     },
 
@@ -189,30 +198,64 @@ function bulk() {
     //sent in /_bulk
     return new Promise(function (resolve, reject) {
         db.any("SELECT pinboard.pin.pin_id, pinboard.layout.label AS label_layout, pinboard.pinboard.label AS label_Pinboard, " +
-        "pinboard.pin.label AS label_pin, pinboard.vote_pin.vote " +
-        "FROM pinboard.layout " +
-	    "INNER JOIN pinboard.pinboard ON pinboard.layout.layout_id = pinboard.pinboard.layout_id " +
-	    "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
-	    "INNER JOIN pinboard.vote_pin ON pinboard.pin.pin_id = pinboard.vote_pin.pin_id;")
+            "pinboard.pin.label AS label_pin, pinboard.vote_pin.vote " +
+            "FROM pinboard.layout " +
+            "INNER JOIN pinboard.pinboard ON pinboard.layout.layout_id = pinboard.pinboard.layout_id " +
+            "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
+            "INNER JOIN pinboard.vote_pin ON pinboard.pin.pin_id = pinboard.vote_pin.pin_id;")
             .then(function (rows) {
                 if (rows.length != 0) {
                     console.log("Call to service");
                     elasticService.bulkPin(rows).then(function (message) {
                         resolve(message);
                     })
-                    .catch(function (error) {
-                        console.log(error);
-                        reject(error.message || error);
-                        
-                    });
-                    
+                        .catch(function (error) {
+                            console.log(error);
+                            reject(error.message || error);
+
+                        });
+
                 }
                 else {
                     console.log("No pins in DB");
                 }
             })
             .catch(function (error) {
-                reject(error.message || error);            
+                reject(error.message || error);
+            })
+    })
+}
+
+function importFiles() {
+    var path;
+    return new Promise(function (resolve, reject) {
+        documentModel.getFiles()
+            .then(function (rows) {
+                var actionPromises = [];
+                if (rows.length != 0) {
+                    for (var row = 0; row < rows.length; row++) {
+                        path = rows[row].pathpart1 + rows[row].label;
+                        rows[row].path = path;
+                        actionPromises.push(elasticService.createDocument(rows[row]));
+                    }
+                    Promise.all(actionPromises).then(function (values) {
+                        elasticUpdater.curentUpdate = false;
+                        resolve('createDone');
+                    }).catch(function (err) {
+                        elasticUpdater.curentUpdate = false;
+                        reject(err.message || err);
+                    })
+                        .catch(function (err) {
+                            elasticUpdater.curentUpdate = false;
+                            reject(err.message || err);
+                        })
+                }
+                else{
+                        console.log("No files in DB");
+                    }
+                })
+            .catch(function (error) {
+                reject(error.message || error);
             })
     })
 }
