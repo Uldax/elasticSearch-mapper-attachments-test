@@ -23,7 +23,7 @@ var testModel = {
                     t.none("DROP TRIGGER IF EXISTS pin_change_trigger ON pinboard.pin"),
                     t.none("DROP TRIGGER IF EXISTS layout_change_trigger ON pinboard.layout"),
                     t.none("DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin"),
-                     t.none("DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;")
+                    t.none("DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;")
                 ]);
             })
                 .then(function (data) {
@@ -42,7 +42,7 @@ var testModel = {
                 // this.ctx = transaction config + state context;
                 return t.batch([
                     t.none("CREATE TRIGGER version_change_trigger " +
-                        "AFTER INSERT OR UPDATE OR DELETE " +
+                        "AFTER INSERT OR UPDATE " +
                         "ON file.version " +
                         "FOR EACH ROW " +
                         "EXECUTE PROCEDURE on_change()"),
@@ -56,7 +56,7 @@ var testModel = {
 
 
                     t.none("CREATE TRIGGER pin_change_trigger " +
-                        "AFTER INSERT OR UPDATE OR DELETE " +
+                        "AFTER INSERT OR UPDATE " +
                         "ON pinboard.pin " +
                         "FOR EACH ROW " +
                         "EXECUTE PROCEDURE on_change()"),
@@ -68,7 +68,7 @@ var testModel = {
                         "EXECUTE PROCEDURE on_change()"),
 
                     t.none("CREATE TRIGGER document_group_change_trigger " +
-                        "AFTER UPDATE OR DELETE " +
+                        "AFTER INSERT OR DELETE " +
                         "ON file.file_group " +
                         "FOR EACH ROW " +
                         "EXECUTE PROCEDURE on_change()"),
@@ -108,22 +108,16 @@ var testModel = {
     },
 
     restart_db: function () {
-        return new Promise(function (resolve, reject) {
-            testModel.removeTrigger().then(function (mess) {
-                testModel.clean_db().then(function () {
-                    testModel.setTrigger().then(function () {
-                        resolve("success");
-                    }).catch(function (err) {
-                        reject(err.message || err);
-                    })
-                }).catch(function (err) {
-                    reject(err.message || err);
-
-                })
-            }).catch(function (err) {
+        return testModel.removeTrigger()
+            .then(function (mess) {
+                return testModel.clean_db()
+            })
+            .then(function () {
+                return testModel.setTrigger()
+            })
+            .catch(function (err) {
                 reject(err.message || err);
             })
-        })
     },
 
     insertLayout: function () {

@@ -6,7 +6,8 @@ var request = require("request"),
     utils = require("./utils"),
     elasticBuilder = require("./elasticBuilder"),
     conf = require("../config"),
-    elasticsearch = require('elasticsearch');
+    elasticsearch = require('elasticsearch'),
+    mapping = require('../elasticMapping');
 
 //Conf parameters
 var elasticSearchPort = conf.elastic.port,
@@ -17,11 +18,11 @@ var elasticSearchPort = conf.elastic.port,
     baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort
 
 
+
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
     log: 'error'
 });
-
 
 var elasticService = {
     /*************** DOCUMENT  **************** */
@@ -38,22 +39,26 @@ var elasticService = {
         return new Promise(function (resolve, reject) {
             try {
                 var requestData = elasticBuilder.createDocument(path, data);
-                    client.create({
-                        id: data.log_data_id,
-                        index: indexName,
-                        type: 'document',
-                        body: requestData
-                    }).then(function (resp) {
-                        resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
-                    }, function (err) {
-                        reject(err.message || err);
-                    });
+                client.create({
+                    id: data.log_data_id,
+                    index: indexName,
+                    type: 'document',
+                    body: requestData
+                }).then(function (resp) {
+                    resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
+                }, function (err) {
+                    reject(err.message || err);
+                });
             } catch (err) {
                 reject(err.message || err);
             }
         });
     },
 
+    //check if one result
+    //The updates that have been performed still stick. In other words, the process is not rolled back, only aborted
+    //While the first failure causes the abort all failures that are returned by the failing bulk request are returned in the failures element 
+    //so it’s possible for there to be quite a few.
     addGroupToDocument: function (group_id, document_id) {
         var requestObject = elasticBuilder.addGroupToFile(group_id, document_id);
         var options = {
@@ -61,19 +66,27 @@ var elasticService = {
             url: baseURL + "/opus/document/_update_by_query",
             json: requestObject,
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             }
         };
         return new Promise(function (resolve, reject) {
             request(options, function (err, response, body) {
+                console.log(body);
                 if (!err) {
                     if (response.statusCode === 200) {
                         if (typeof body != undefined) {
-                            resolve(JSON.parse(body));
+                            if (body.total == body.updated) {
+                                resolve(body.total + " document updated");
+                            }
+                            else {
+                                reject(body.version_conflicts + " conflicted")
+                            }
                         }
                     } else {
-                        reject(err);
+                        reject(body);
                     }
+                } else {
+                    reject(err);
                 }
             })
         })
@@ -251,10 +264,7 @@ var elasticService = {
     //TODO test
     createIndex: function () {
         //Allow use to do the promise one after the other
-        return Promise.resolve()
-            .then(function () {
-                return client.indices.exists({ index: "opus" })
-            })
+        return client.indices.exists({ index: "opus" })
             .then(function (exist) {
                 if (exist) {
                     return client.indices.delete({ index: "opus" })

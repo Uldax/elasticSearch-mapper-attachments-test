@@ -192,27 +192,27 @@ var elasticBuilder = {
 
         //Files are in config/script under elasticSearch folder
         addGroupToFile: function (group_id, document_id) {
-            var requestData = {
-                "script": {
-                    "file": addGroupFile,
-                    "params": {
-                        "new_group": group_id
-                    }
-                },
+            var requestData = {           
                 "query": {
                     "term": {
                         "document_id": document_id
+                    }
+                },
+                "script": {
+                    "file": "addGroupFile",
+                    "params": {
+                        "new_group": group_id
                     }
                 }
 
             }
             return requestData;
         },
-
+      
         removeGroupToDocument : function (group_id, document_id) {
             var requestData = {
                 "script": {
-                    "file": removeGroup,
+                    "file": "removeGroup",
                     "params": {
                         "new_group": group_id
                     }

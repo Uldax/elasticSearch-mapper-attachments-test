@@ -1,5 +1,6 @@
 
 --On supprime le contenu des tables
+TRUNCATE TABLE public.update;
 TRUNCATE TABLE file.folder CASCADE;
 TRUNCATE TABLE file.file CASCADE;
 TRUNCATE TABLE file.version CASCADE;

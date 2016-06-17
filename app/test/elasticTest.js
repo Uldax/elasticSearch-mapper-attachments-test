@@ -39,60 +39,26 @@ function onError(err) {
 }
 
 
-function createIndex() {
-    return Promise.resolve()
-        .then(function () {
-            return client.indices.create({ index: "opus" });
-        })
-        .then(function () {
-            return client.indices.putMapping({ index: "opus", type: 'document', body: mapping.documentMapping });
-        })
-        .then(function () {
-            return client.indices.putMapping({ index: "opus", type: 'pin', body: mapping.pinMapping });
-        })
-        .catch(function (err) {
-            console.log(err.message || err);
-        });
-}
-
 function clean_all() {
-    return Promise.resolve()
-        .then(function () {
-            return testModel.restart_db()
-        })
+    return testModel.restart_db()
         .then(function () {
             return testModel.insertFolder("root")
         })
         .then(function () {
-            return client.indices.exists({ index: "opus" })
+            return service.createIndex();
         })
-        .then(function (exist) {
-            if (exist) {
-                return client.indices.delete({ index: "opus" })
-            } else {
-                return Promise.resolve()
-            }
-        })
-        .then(function () {
-            return createIndex()
+        .catch(function (err) {
+            console.log(err);
         })
 }
 
 describe('Elastic Search', function () {
     before(function (done) {
         //Destroy and recreate the index and mapping
-        client.indices.exists({ index: "opus" }).then(function (exist) {
-            if (exist) {
-                client.indices.delete({ index: "opus" }).then(function () {
-                    createIndex().then(function () {
-                        done();
-                    })
-                });
-            } else {
-                createIndex().then(function () {
-                    done();
-                })
-            }
+        clean_all().then(function () {
+            done();
+        }).catch(function (err) {
+            console.log(err);
         })
     });
 
@@ -102,7 +68,6 @@ describe('Elastic Search', function () {
             done();
         }).catch(onError)
     });
-
 
     describe('Elastic updater', function () {
         before(function (done) {
@@ -155,7 +120,7 @@ describe('Elastic Search', function () {
                         }
                     })
                     .then(function () {
-                        createIndex().then(function () {
+                        service.createIndex().then(function () {
                             done()
                         })
                     })
@@ -277,8 +242,8 @@ describe('Elastic Search', function () {
                         return update.getUpdates();
                     })
                     .then(function (rows) {
-                        rows.should.have.length(1);                  
-                             done();
+                        rows.should.have.length(1);
+                        done();
                     })
                     .catch(function (err) {
                         console.log(err.message || err);
@@ -290,4 +255,20 @@ describe('Elastic Search', function () {
 
 
     })
+
+    after(function (done) {
+        return testModel.restart_db()
+            .then(function (mes) {
+                console.log(mes)
+                return service.createIndex();
+            })
+            .then(function () {
+                console.log("clean");
+                done();
+            })
+            .catch(function (err) {
+                console.log(err);
+            })
+    });
+
 })

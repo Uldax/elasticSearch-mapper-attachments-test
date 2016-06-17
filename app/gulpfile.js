@@ -55,7 +55,7 @@ gulp.task('browser-sync', ['nodemon'], function () {
     });
 });
 
-gulp.task('default', ['browser-sync'], function () {
+gulp.task('default', ['nodemon'], function () {
     //open("http://localhost:3000", "chrome");
 });
 

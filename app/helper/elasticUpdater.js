@@ -15,7 +15,17 @@ var elasticUpdater = {
     start: function () {
         console.log("get downtime update...");
         //setInterval(elasticUpdater.readUpdateTable, 10000);
-        elasticUpdater.readUpdateTable();
+        elasticUpdater.readUpdateTable().then(function(state){
+            var rejectResult = state.filter(x => x.status === "rejected");
+            console.log("Update todo :" + state.length);
+            console.log("Numbers of failded :" + rejectResult.length);
+            rejectResult.forEach(function(element) {
+                   console.log(element.e);
+            }, this);
+         
+        }).catch(function(err) {
+            console.log(err);
+        })
     },
 
     //Daemon that do update every minute
@@ -34,13 +44,12 @@ var elasticUpdater = {
                                 actionPromises.push(action);
                             }
                         }
-                        console.log("Update todo :" +actionPromises.length);
+                        //
                         return Promise.all(actionPromises.map(utils.reflect))
                         //console.log("length of promiseArray " + actionPromises.length);
                         // Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
                         // la promesse all est rejetée immédiatement avec la valeur rejetée par la promesse en question, 
                     }).then(function (results) {
-                        var rejectResult = results.filter(x => x.status === "rejected");
                         elasticUpdater.curentUpdate = false;
                         //TODO handle rejected
                         resolve(results);
@@ -60,6 +69,8 @@ var elasticUpdater = {
 
 
 
+
+
 /*************** ACTION  **************** */
 // Define if it's update/delete or insert for each update
 
@@ -70,12 +81,12 @@ function actionResolver(actionDefiner, update_id, type_id) {
                 console.log(message);
                 return updateModel.deleteUpdate(update_id, type_id)
             })
-            .then(function(){
+            .then(function () {
                 resolve("action done");
             })
-            .catch(function(err) {
+            .catch(function (err) {
                 reject("Action resolver : " + (err.message || err));
-            })         
+            })
     })
 }
 
@@ -109,7 +120,7 @@ function createActionUpdate(element) {
         }
         if (actionDefiner) {
             //if resolved the promise is resolved else if return it's pending
-            resolve( actionResolver(actionDefiner,update_id,type_id));
+            resolve(actionResolver(actionDefiner, update_id, type_id));
         }
         else {
             reject("CreateActionUpdate : no action found");
@@ -128,7 +139,7 @@ function actionDocument(op, update_id) {
                 if (op == "U") {
                     resolve(elasticService.updateDocument(row_to_update));
                 } else if (op == "I") {
-                    resolve( elasticService.createDocument(row_to_update));
+                    resolve(elasticService.createDocument(row_to_update));
                 } else {
                     reject("unknown op for document, op = " + op);
                 }
@@ -167,17 +178,18 @@ function actionPin(op, update_id) {
         //Get the ligne to update
         pinModel.getPinInfoById(update_id).then(function (row_to_insert) {
             if (op == "I") {
-                return (elasticService.createPin(row_to_insert));
+                resolve (elasticService.createPin(row_to_insert));
             }
             if (op == "U") {
-                return (elasticService.updatePin(row_to_update));
+                resolve (elasticService.updatePin(row_to_update));
             } else {
                 reject("unknow op");
             }
-        }).catch(utils.onError)
+        }).catch(function (err) {
+            reject("in actionPin " + (err.message || err));
+        })
     });
 }
-
 
 
 //TODO : pascale help

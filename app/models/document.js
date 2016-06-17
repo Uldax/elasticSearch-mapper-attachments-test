@@ -29,7 +29,7 @@ var documentModel = {
     },
 
     getFile_GroupByLogData: function (log_data_id) {
-        return db.one("SELECT file_id,group_id FROM file_group WHERE log_data_id = $1", [log_data_id]);
+        return db.one("SELECT file_id,group_id FROM file.file_group WHERE log_data_id = $1", [log_data_id]);
     }
 
 }
