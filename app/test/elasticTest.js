@@ -12,12 +12,9 @@ var elasticSearchPort = conf.elastic.port,
     protocol = conf.elastic.protocol,
     serverIp = conf.elastic.serverIp,
     indexName = "opus",
-    typeName = "document",
     folderName = "indexedDocuments",
     baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
-elasticPath = indexName + "/" + typeName;
 
-var document = require('../models/document');
 var updater = require('../helper/elasticUpdater');
 var service = require('../helper/elasticService');
 var update = require('../models/update');
@@ -64,7 +61,7 @@ function clean_all() {
             return testModel.restart_db()
         })
         .then(function () {
-            return document.insertFolder("root")
+            return testModel.insertFolder("root")
         })
         .then(function () {
             return client.indices.exists({ index: "opus" })
@@ -106,49 +103,36 @@ describe('Elastic Search', function () {
         }).catch(onError)
     });
 
+
     describe('Elastic updater', function () {
         before(function (done) {
             // In we clean and set the trigger for the bd
             testModel.restart_db().then(function () {
-                document.insertFolder("root").then(function () {
+                testModel.insertFolder("root").then(function () {
                     done()
                 }).catch(onError)
             }).catch(onError)
         })
 
-        it('Updater should continue even if one update failed but update stay in stage', function (done) {
-            this.timeout(3000);
-            return Promise.resolve()
-                .then(function () {
-                    return Promise.all(
-                        [
-                            document.insertFileInFolder("root", "fileLabel", "thispathdoesntExist.doc"),
-                            document.insertFileInFolder("root", fileLabel, myDocPath)
-                        ]
-                    )
-                })
-                .then(function () {
-                    return updater.readUpdateTable();
-                })
-                .then(function (mess) {
-                    return update.getUpdates();
-                })
-                .then(function (rows) {
-                    rows.should.have.length(1);
-                    setTimeout(function () {
-                        return service.countFromAnOtherWorld("document").then(function (body) {
-                            body.count.should.equal(1);
-                            done();
-                        })
-                    }, 1000);
 
-                })
-                .catch(function (err) {
-                    console.log(err.message || err);
-                });
+        it("update must be empty", function (done) {
+            update.getUpdates()
+                .then(function (rows) {
+                    rows.should.have.length(0);
+                    done();
+                }).catch(onError)
         })
 
-        it('Updater should remove staged error after X run')
+        it("can't be interupt with other call", function (done) {
+            updater.readUpdateTable().then(function () {
+                done();
+            })
+            updater.readUpdateTable().catch(function (err) {
+                err.should.equal("update already in progress");
+            })
+        })
+
+
 
         describe('Document update', function () {
             before(function (done) {
@@ -158,7 +142,7 @@ describe('Elastic Search', function () {
                         return testModel.restart_db()
                     })
                     .then(function () {
-                        return document.insertFolder("root")
+                        return testModel.insertFolder("root")
                     })
                     .then(function () {
                         return client.indices.exists({ index: "opus" })
@@ -181,9 +165,10 @@ describe('Elastic Search', function () {
             })
 
             it("Document insert should remove update after tracker and add field in elastic", function (done) {
+                this.timeout(15000);
                 return Promise.resolve()
                     .then(function () {
-                        return document.insertFileInFolder("root", fileLabel, myDocPath);
+                        return testModel.insertFileInFolder("root", fileLabel, myDocPath);
                     })
                     .then(function () {
                         return updater.readUpdateTable();
@@ -194,7 +179,7 @@ describe('Elastic Search', function () {
                     .then(function (rows) {
                         rows.should.have.length(0);
                         setTimeout(function () {
-                            return service.countFromAnOtherWorld("document").then(function (body) {
+                            return service.countFromAnOtherWorld("testModel").then(function (body) {
                                 body.count.should.equal(1);
                                 done();
                             })
@@ -206,11 +191,11 @@ describe('Elastic Search', function () {
                     });
             })
 
-            it("New file version should remove update after tracker and stay the same number in elastic", function (done) {
+            it("New file version should remove update after tracker and add filed in elastic", function (done) {
                 this.timeout(4000);
                 return Promise.resolve()
                     .then(function () {
-                        return document.insertFileVersionByFileLabel(fileLabel, myDoc2Path);
+                        return testModel.insertFileVersionByFileLabel(fileLabel, myDoc2Path);
                     })
                     .then(function () {
                         return updater.readUpdateTable();
@@ -221,9 +206,9 @@ describe('Elastic Search', function () {
                     .then(function (rows) {
                         rows.should.have.length(0);
                         setTimeout(function () {
-                            return service.countFromAnOtherWorld("document").then(function (body) {
+                            return service.countFromAnOtherWorld("testModel").then(function (body) {
                                 console.log(body);
-                                body.count.should.equal(1);
+                                body.count.should.equal(2);
                                 done();
                             })
                         }, 1000);
@@ -256,7 +241,7 @@ describe('Elastic Search', function () {
             it("Pinboard unindex");
         })
 
-        //Like document
+        //Like testModel
         describe('Pin update', function () {
             it("Pin insert should remove update after tracker and add field in elastic");
             it("Pin update should remove update after tracker and keep same number in elastic");
@@ -267,6 +252,40 @@ describe('Elastic Search', function () {
             it("Layout insert do nothing")
             it("Layout update must update all pin concerned in elastic")
             it("Layout unindex");
+        })
+
+
+        describe('Elastic error', function () {
+            it('Updater should continue even if one update failed but update stay in stage', function (done) {
+                this.timeout(3000);
+                return Promise.resolve()
+                    .then(function () {
+                        return Promise.all(
+                            [
+                                testModel.insertFileInFolder("root", "fileLabel", "thispathdoesntExist.doc"),
+                                testModel.insertFileInFolder("root", fileLabel, myDocPath)
+                            ]
+                        )
+                    })
+                    .then(function () {
+                        return updater.readUpdateTable();
+                    })
+                    .then(function (mess) {
+                        mess.should.have.length(2);
+                        var rejectResult = mess.filter(x => x.status === "rejected");
+                        rejectResult.should.have.length(1);
+                        return update.getUpdates();
+                    })
+                    .then(function (rows) {
+                        rows.should.have.length(1);                  
+                             done();
+                    })
+                    .catch(function (err) {
+                        console.log(err.message || err);
+                    });
+            })
+
+            it('Updater should remove staged error after X run')
         })
 
 

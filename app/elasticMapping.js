@@ -32,6 +32,7 @@ var mapping = {
                     "format": "dd/MM/yyyy"
                 },
                 "file_label" : {
+                    "type" : "string"
                 },
                 "document_id": {
                     "type": "long"
@@ -42,7 +43,9 @@ var mapping = {
                 "document_groups_ids": {
                     "type": "long"
                 },
-                "insert_by" :{}
+                "insert_by" :{
+                    "type" : "long"
+                }
             }
         }
     },

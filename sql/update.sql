@@ -1,11 +1,10 @@
 ﻿DROP TABLE IF EXISTS public.update;
 CREATE TABLE public.update(
-	update_id SERIAL NOT NULL ,
-    update_composite_id SERIAL NOT NULL ,
-	type_id   INT   ,
+	update_id INT NOT NULL ,
+	type_id   INT NOT NULL  ,
 	op        CHAR (1)  NOT NULL ,
 	updated   TIMESTAMP  NOT NULL ,
-	CONSTRAINT prk_constraint_update PRIMARY KEY (update_id,type_id)
+	CONSTRAINT prk_constraint_update PRIMARY KEY (update_id,type_id,op)
 )WITHOUT OIDS;
 
 
@@ -15,6 +14,55 @@ ALTER TABLE public.update ADD CONSTRAINT FK_update_type_id FOREIGN KEY (type_id)
 ------------------------------------------------------------
 -- Trigger: version change
 ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION on_change()
+  RETURNS trigger AS
+$BODY$
+DECLARE
+    up_id integer;
+    t_id  integer;
+    opcode Char(1);
+BEGIN    
+    --tableKey := 'pin_id';
+    IF TG_OP = 'DELETE' OR TG_OP = 'TRUNCATE' THEN
+        opcode := 'D';
+    ELSIF TG_OP = 'UPDATE' THEN 
+        opcode := 'U';
+    ELSIF TG_OP = 'INSERT' THEN
+        opcode := 'I';    
+    END IF;
+       
+    IF NEW.log_data_id IS NULL THEN
+        up_id := OLD.log_data_id;
+    ELSE 
+        up_id := NEW.log_data_id;
+    END IF;
+    -- Check if there is already an update or insert 
+    IF EXISTS (SELECT public.update.op FROM public.update
+        JOIN content.type ON type.type_id = public.update.type_id 
+        WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
+        THEN
+        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=up_id;
+    ELSE
+        -- test here ?
+        -- type_id because couple update_id and type_id is unique
+        SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
+        INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
+    END IF;
+        
+    RETURN NULL;
+END;
+
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION on_change()
+  OWNER TO superopus;
+
+
+
+
+
+
 CREATE OR REPLACE FUNCTION on_pin_change()
   RETURNS trigger AS
 $BODY$
@@ -39,16 +87,16 @@ BEGIN
         up_id := NEW.pin_id;
     END IF;
     -- Check if there si already an update or insert 
-    IF EXISTS (SELECT public.update.op INTO old_opcode FROM public.update
+    IF EXISTS (SELECT public.update.op FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
-        WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
+        WHERE log_data_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
         THEN
-        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=up_id;
+        UPDATE public.update SET op=opcode, updated=now() WHERE log_data_id=up_id;
     ELSE
         -- test here ?
-        -- type_id because couple update_id and type_id is unique
+        -- type_id because couple log_data_id and type_id is unique
         SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
-        INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
+        INSERT INTO public.update (log_data_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
     END IF;
         
     RETURN NULL;
@@ -82,14 +130,13 @@ BEGIN
     -- Check if there is already an update  
     IF EXISTS (SELECT 1 FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
-        WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
+        WHERE log_data_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
         THEN
-        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=up_id;
+        UPDATE public.update SET op=opcode, updated=now() WHERE log_data_id=up_id;
     ELSE
-        -- test here ?
-        -- type_id because couple update_id and type_id is unique
+        -- type_id because couple log_data_id and type_id is unique
         SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
-        INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
+        INSERT INTO public.update (log_data_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
     END IF;
         
     RETURN NULL;
@@ -106,8 +153,7 @@ CREATE OR REPLACE FUNCTION on_document_group_change()
   RETURNS trigger AS
 $BODY$
 DECLARE
-    file_id integer;
-    group_id integer;
+    up_id integer;
     t_id  integer;
     opcode Char(1);
 BEGIN
@@ -121,15 +167,13 @@ BEGIN
         opcode := 'I';    
     END IF;
     IF NEW.file_id IS NULL THEN
-        file_id := OLD.file_id;
-        group_id := OLD.group_id;
+        up_id := OLD.file_id;
     ELSE 
-        file_id := NEW.file_id;
-        group_id := NEW.group_id;
+        up_id := NEW.file_id;
     END IF;
 
     SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
-    INSERT INTO public.update (update_id, update_composite_id, type_id, op, updated) VALUES (file_id, group_id,t_id,opcode, now());
+    INSERT INTO public.update (log_data_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
         
     RETURN NULL;
 END;
@@ -169,16 +213,16 @@ BEGIN
     -- Check if there si already an update  
     IF EXISTS (SELECT 1 FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
-        WHERE update_id = up_id 
+        WHERE log_data_id = up_id 
         AND content.type.table_name = TG_TABLE_NAME
         AND public.update.op = opcode ) 
         THEN
-        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=up_id;
+        UPDATE public.update SET op=opcode, updated=now() WHERE log_data_id=up_id;
     ELSE
         -- test here ?
-        -- type_id because couple update_id and type_id is unique
+        -- type_id because couple log_data_id and type_id is unique
         SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
-        INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
+        INSERT INTO public.update (log_data_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
     END IF;
         
     RETURN NULL;
@@ -216,14 +260,14 @@ BEGIN
     -- Check if there si already an update  
     IF EXISTS (SELECT 1 FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
-        WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
+        WHERE log_data_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
         THEN
-        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=up_id;
+        UPDATE public.update SET op=opcode, updated=now() WHERE log_data_id=up_id;
     ELSE
         -- test here ?
-        -- type_id because couple update_id and type_id is unique
+        -- type_id because couple log_data_id and type_id is unique
         SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
-        INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
+        INSERT INTO public.update (log_data_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
     END IF;
         
     RETURN NULL;
@@ -244,43 +288,46 @@ DROP TRIGGER IF EXISTS pinboard_change_trigger ON pinboard.pinboard;
 DROP TRIGGER IF EXISTS pin_change_trigger ON pinboard.pin;
 DROP TRIGGER IF EXISTS layout_change_trigger ON pinboard.layout;
 DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin;
-DROP TRIGGER IF EXISTS on_document_group_change ON file.file_group;
+DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;
+
+
+
 
 CREATE TRIGGER version_change_trigger 
-AFTER INSERT OR UPDATE OR DELETE  
+AFTER INSERT OR UPDATE  
 ON file.version  
 FOR EACH ROW  
-EXECUTE PROCEDURE on_version_change();
+EXECUTE PROCEDURE on_change();
 
 
-CREATE TRIGGER documnet_group_change_trigger 
-AFTER INSERT OR UPDATE OR DELETE  
+CREATE TRIGGER document_group_change_trigger 
+AFTER INSERT OR DELETE  
 ON file.file_group  
 FOR EACH ROW  
-EXECUTE PROCEDURE on_document_group_change();
+EXECUTE PROCEDURE on_change();
 
 
 CREATE TRIGGER pinboard_change_trigger 
 AFTER UPDATE  
 ON pinboard.pinboard  
 FOR EACH ROW  
-EXECUTE PROCEDURE on_pinboard_change();
+EXECUTE PROCEDURE on_change();
 
 
 CREATE TRIGGER pin_change_trigger 
-AFTER INSERT OR UPDATE OR DELETE  
+AFTER INSERT OR UPDATE  
 ON pinboard.pin 
 FOR EACH ROW  
-EXECUTE PROCEDURE on_pin_change();
+EXECUTE PROCEDURE on_change();
 
 CREATE TRIGGER layout_change_trigger 
 AFTER UPDATE  
 ON pinboard.layout
 FOR EACH ROW  
-EXECUTE PROCEDURE on_layout_change();
+EXECUTE PROCEDURE on_change();
 
 CREATE TRIGGER vote_change_trigger 
-AFTER UPDATE  
+AFTER INSERT OR UPDATE  
 ON pinboard.vote_pin
 FOR EACH ROW  
 EXECUTE PROCEDURE on_change();

@@ -5,7 +5,7 @@
 var request = require("request"),
     utils = require("./utils"),
     elasticBuilder = require("./elasticBuilder"),
-conf = require("../config"),
+    conf = require("../config"),
     elasticsearch = require('elasticsearch');
 
 //Conf parameters
@@ -36,22 +36,21 @@ var elasticService = {
         }
         //! fileSize > 104857600      
         return new Promise(function (resolve, reject) {
-            var requestData = elasticBuilder.createDocument(path, data);
-            if (requestData) {
-                client.create({
-                    id: data.log_data_id,
-                    index: indexName,
-                    type: 'document',
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
-                }, function (err) {
-                    reject(err.message || err);
-                });
-            } else {
-                reject("no request data");
+            try {
+                var requestData = elasticBuilder.createDocument(path, data);
+                    client.create({
+                        id: data.log_data_id,
+                        index: indexName,
+                        type: 'document',
+                        body: requestData
+                    }).then(function (resp) {
+                        resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
+                    }, function (err) {
+                        reject(err.message || err);
+                    });
+            } catch (err) {
+                reject(err.message || err);
             }
-
         });
     },
 
@@ -81,7 +80,28 @@ var elasticService = {
     },
 
     removeGroupToDocument: function (group_id, document_id) {
-
+        var requestObject = elasticBuilder.removeGroupToDocument(group_id, document_id);
+        var options = {
+            method: 'POST',
+            url: baseURL + "/opus/document/_update_by_query",
+            json: requestObject,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        };
+        return new Promise(function (resolve, reject) {
+            request(options, function (err, response, body) {
+                if (!err) {
+                    if (response.statusCode === 200) {
+                        if (typeof body != undefined) {
+                            resolve(JSON.parse(body));
+                        }
+                    } else {
+                        reject(err);
+                    }
+                }
+            })
+        })
     },
 
     //In update we don't reindex the content of file :

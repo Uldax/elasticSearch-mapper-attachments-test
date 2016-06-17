@@ -16,11 +16,7 @@ var updateModel = {
         return db.none("DELETE FROM public.update WHERE update_id = $1 AND type_id = $2", [update_id, type_id]);
     },
     
-    deleteFileGroupUpdate: function (update_id,group_id, type_id) {
-        return db.none("DELETE FROM public.update WHERE update_id = $1 AND update_composite_id = $2 AND type_id = $3", [update_id,group_id, type_id]);
-    },
-
-    deleteUpdates: function (update_id, type_id) {
+    deleteUpdates: function () {
         return db.none("DELETE FROM public.update");
     }
 

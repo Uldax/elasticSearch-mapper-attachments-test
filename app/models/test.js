@@ -5,6 +5,8 @@ var pgp = require('pg-promise')();
 var update = require('./update');
 var document = require('./document');
 var pin = require('./pin');
+var utils = require('../helper/utils');
+
 
 var db = pgp(connectionString);
 
@@ -20,7 +22,8 @@ var testModel = {
                     t.none("DROP TRIGGER IF EXISTS pinboard_change_trigger ON pinboard.pinboard"),
                     t.none("DROP TRIGGER IF EXISTS pin_change_trigger ON pinboard.pin"),
                     t.none("DROP TRIGGER IF EXISTS layout_change_trigger ON pinboard.layout"),
-                    t.none("DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin")
+                    t.none("DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin"),
+                     t.none("DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;")
                 ]);
             })
                 .then(function (data) {
@@ -42,27 +45,33 @@ var testModel = {
                         "AFTER INSERT OR UPDATE OR DELETE " +
                         "ON file.version " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_version_change()"),
+                        "EXECUTE PROCEDURE on_change()"),
 
 
                     t.none("CREATE TRIGGER pinboard_change_trigger " +
                         "AFTER UPDATE " +
                         "ON pinboard.pinboard " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_pinboard_change()"),
+                        "EXECUTE PROCEDURE on_change()"),
 
 
                     t.none("CREATE TRIGGER pin_change_trigger " +
                         "AFTER INSERT OR UPDATE OR DELETE " +
                         "ON pinboard.pin " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_pin_change()"),
+                        "EXECUTE PROCEDURE on_change()"),
 
                     t.none("CREATE TRIGGER layout_change_trigger " +
                         "AFTER UPDATE " +
                         "ON pinboard.layout " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_layout_change()"),
+                        "EXECUTE PROCEDURE on_change()"),
+
+                    t.none("CREATE TRIGGER document_group_change_trigger " +
+                        "AFTER UPDATE OR DELETE " +
+                        "ON file.file_group " +
+                        "FOR EACH ROW " +
+                        "EXECUTE PROCEDURE on_change()"),
 
                     // t.none("CREATE TRIGGER vote_change_trigger " +
                     //     "AFTER UPDATE " +
@@ -83,7 +92,7 @@ var testModel = {
     clean_db: function () {
         return new Promise(function (resolve, reject) {
             var P1 = update.deleteUpdates();
-            var P2 = document.deleteFiles();
+            var P2 = testModel.deleteFiles();
             var P3 = pin.deletePins();
             //TODO : delete user
             var promiseArray = [P1, P2, P3];
@@ -132,13 +141,67 @@ var testModel = {
     updatePinBoard: function (pinboard_id, new_label) {
         return db.none("UPDATE pinboard.pinboard SET label = $1 WHERE pinboard_id = $2", [new_label, pinboard_id]);
     },
-    
+
     insertPin: function (pinboard_id, label, user_id) {
         return db.one("INSERT INTO pinboard.pin(pinboard_id, label, user_id) VALUES ($1, $2, $3) RETURNING pin_id ", [pinboard_id, label, user_id]);
     },
-    
-     updatePin: function (pin_id, new_label) {
+
+    updatePin: function (pin_id, new_label) {
         return db.none("UPDATE pinboard.pin SET label = $1 WHERE pin_id = $2", [new_label, pin_id]);
+    },
+
+    //First document insert
+    insertFileInFolder: function (folder_name, file_name, file_path) {
+        return new Promise(function (resolve, reject) {
+            db.one("SELECT folder_id FROM file.folder WHERE label = $1", folder_name).then(function (row) {
+                var folder_id = row.folder_id;
+                db.one("INSERT INTO file.file (label, folder_id, user_id) VALUES ($1,$2, 1) RETURNING file_id;", [file_name, folder_id]).then(function (row) {
+                    var file_id = row.file_id;
+                    resolve(testModel.insertFileVersion(file_id, file_path));
+                }).catch(utils.onError)
+            }).catch(utils.onError)
+        })
+
+    },
+
+    //Second for document update
+    insertFileVersion: function (id_file, path) {
+        return db.one("INSERT INTO file.version (file_id, label, path, user_id) VALUES " +
+            "($1, 'test version 1', $2, 1) RETURNING log_data_id", [id_file, path]);
+    },
+
+    insertFileVersionByFileLabel: function (file_name, file_path) {
+        return new Promise(function (resolve, reject) {
+            db.one("SELECT file.file_id FROM file.file WHERE label = $1", [file_name]).then(function (row) {
+                var file_id = row.file_id;
+                resolve(testModel.insertFileVersion(file_id, file_path));
+            }).catch(utils.onError)
+        })
+    },
+
+    insertFolder: function (folder_name) {
+        return db.none("INSERT INTO file.folder (label, user_id) VALUES ($1, 1);", folder_name);
+    },
+
+    deleteFiles: function () {
+        return new Promise(function (resolve, reject) {
+            db.tx(function (t) {
+                // this = t = transaction protocol context;
+                // this.ctx = transaction config + state context;
+                return t.batch([
+                    t.none("DELETE FROM file.version"),
+                    t.none("DELETE FROM file.file"),
+                    t.none("DELETE FROM file.folder")
+                ]);
+            })
+                .then(function (data) {
+                    resolve("Files delete");
+                })
+                .catch(function (error) {
+                    reject(error.message || error);
+                });
+        })
+
     },
 
 

@@ -1,3 +1,4 @@
+"use strict";
 //BDD style assertions for node.js
 var should = require('should');
 
@@ -8,8 +9,8 @@ var pgp = require('pg-promise')();
 
 
 var db = require('../helper/db').db;
-var update = require('../models/update');
 var document = require('../models/document');
+var update = require('../models/update');
 var pin = require('../models/pin');
 var testModel = require('../models/test');
 
@@ -28,7 +29,7 @@ describe('Database Update', function () {
   before(function (done) {
     // In we clean and set the trigger for the bd
     testModel.restart_db().then(function () {
-      document.insertFolder("root").then(function () {
+      testModel.insertFolder("root").then(function () {
         done()
       }).catch(onError)
     }).catch(onError)
@@ -37,11 +38,14 @@ describe('Database Update', function () {
   // use describe to give a title to your test suite
   describe('Document', function () {
     it("should add entry 'I' into update when file insert", function (done) {
-      //console.log(document.insertFileVersion());
-      document.insertFileInFolder("root", fileLabel, "indexedDocument/departM2.pdf").then(function () {
+      //console.log(testModel.insertFileVersion());
+      testModel.insertFileInFolder("root", fileLabel, "indexedDocument/departM2.pdf").then(function (row) {
+        var log_data_version_id = row.log_data_id;
+
         update.getUpdates().then(function (rows) {
           rows.should.have.length(1);
           rows[0].op.should.equal('I');
+          rows[0].update_id.should.equal(log_data_version_id);
           done();
         }).catch(onError)
 
@@ -51,7 +55,7 @@ describe('Database Update', function () {
 
     it("should add entry 'I' into update when new file version insert for the same file", function (done) {
       //TODO can be better here
-      document.insertFileVersionByFileLabel(fileLabel, "indexedDocument/MORACedric_English_CV.pdf").then(function () {
+      testModel.insertFileVersionByFileLabel(fileLabel, "indexedDocument/MORACedric_English_CV.pdf").then(function () {
         update.getUpdates().then(function (rows) {
           rows.should.have.length(2);
           rows[1].op.should.equal('I');

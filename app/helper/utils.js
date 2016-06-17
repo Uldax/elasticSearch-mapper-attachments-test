@@ -69,8 +69,19 @@ var utils = {
 
     //allow to continue promise.all regardless of if one promise has failed.
     reflect: function (promise) {
-        return promise.then(function (v) { return { v: v, status: "resolved" } },
-            function (e) { return { e: e, status: "rejected" } });
+        return promise.then(function (v) {
+            return { v: v, status: "resolved" }
+        },
+            function (e) {
+                return { e: e, status: "rejected" }
+            });
+    },
+
+    //Promise catch
+    onError: function (err) {
+        console.log("throwing error");
+        //return reject(err.message || err);
+        throw new Error(err.message || err);
     }
 }
 

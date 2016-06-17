@@ -170,7 +170,6 @@ var elasticBuilder = {
         },
 
         createDocument: function (path, data) {
-            try {
                 var base64file = utils.base64_encode("../" + path);
                 var fileSize = Buffer.byteLength(base64file);
                 //id is set in url sent to elastic : http POST elastic/index/type/id
@@ -188,11 +187,7 @@ var elasticBuilder = {
                     "document_groups_ids": []
                 }
                 return requestData;
-            }
-            catch (err) {
-                console.log(err.message || err);
-                return;
-            }
+            
         },
 
         //Files are in config/script under elasticSearch folder
@@ -200,6 +195,24 @@ var elasticBuilder = {
             var requestData = {
                 "script": {
                     "file": addGroupFile,
+                    "params": {
+                        "new_group": group_id
+                    }
+                },
+                "query": {
+                    "term": {
+                        "document_id": document_id
+                    }
+                }
+
+            }
+            return requestData;
+        },
+
+        removeGroupToDocument : function (group_id, document_id) {
+            var requestData = {
+                "script": {
+                    "file": removeGroup,
                     "params": {
                         "new_group": group_id
                     }
@@ -229,9 +242,7 @@ var elasticBuilder = {
 
         //Function which returns the JSON to index pins
         bulkPin: function (rows) {
-
             var myJson = [];
-
             for (var row = 0; row < rows.length; row++) {
                 var layout_label_value = rows[row].label_layout;
                 var pin_id_value = rows[row].pin_id;
@@ -254,7 +265,6 @@ var elasticBuilder = {
             return myJson;
         },
 
-
         //TODO
         delete: function (row) {
 
@@ -263,7 +273,6 @@ var elasticBuilder = {
 
     //Set field to retrive and highlight
     base: function () {
-
         return ejs.Request()
             .source(["attachment._name", "attachment._date"])
             .highlight(ejs.Highlight("attachment.content").numberOfFragments(3))
