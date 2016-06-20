@@ -1,4 +1,9 @@
 
+------------------------------------------------------------------------------------
+--                 DOCUMENTS
+------------------------------------------------------------------------------------
+
+
 --On supprime le contenu des tables
 TRUNCATE TABLE public.update;
 TRUNCATE TABLE file.folder CASCADE;
@@ -86,3 +91,9 @@ INSERT INTO file.file_group (file_id, group_id, user_id) VALUES ((SELECT file_id
 INSERT INTO file.file_group (file_id, group_id, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORA_Cedric_Lettre_motiv_Canada.docx'),(SELECT group_id FROM public.groups WHERE label='groupe 3'), 1);
 INSERT INTO file.file_group (file_id, group_id, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORACedric_Cover_letter_Sherbrooke.pdf'),(SELECT group_id FROM public.groups WHERE label='groupe 1'), 1);
 INSERT INTO file.file_group (file_id, group_id, user_id) VALUES ((SELECT file_id FROM file.file WHERE label='MORACedric_English_CV.pdf'),(SELECT group_id FROM public.groups WHERE label='groupe 3'), 1);
+
+--On associe les pinboards aux groupes
+INSERT INTO pinboard.pinboard_group (pinboard_id, group_id, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='firstPinboard'), (SELECT group_id FROM public.groups WHERE label='groupe 1'), 1);
+INSERT INTO pinboard.pinboard_group (pinboard_id, group_id, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='firstPinboard'), (SELECT group_id FROM public.groups WHERE label='groupe 2'), 1);
+INSERT INTO pinboard.pinboard_group (pinboard_id, group_id, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='secondPinboard'), (SELECT group_id FROM public.groups WHERE label='groupe 2'), 1);
+INSERT INTO pinboard.pinboard_group (pinboard_id, group_id, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='secondPinboard'), (SELECT group_id FROM public.groups WHERE label='groupe 3'), 1);
