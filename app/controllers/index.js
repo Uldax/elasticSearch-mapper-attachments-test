@@ -41,14 +41,14 @@ router.post('/search', function (req, res, next) {
     var dbDone = false;
     var filterCall = false;
     var userAuth = req.body.userAuth || 0;
-    if (userAuth === 0 || querryString === "") {
-        res.send({
-            error: "Missing base parameters"
-        });
-        return;
-    }
+    // if (userAuth === 0 || querryString === "") {
+    //     res.send({
+    //         error: "Missing base parameters"
+    //     });
+    //     return;
+    // }
     console.log(querryString + " with authLevel " + userAuth);
-    elasticService.search(req.body)
+    elasticService.searchTest()
         .then(function (result) {
             res.send(result);
             //get read access for user

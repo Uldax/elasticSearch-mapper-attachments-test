@@ -102,6 +102,7 @@ var ejs = require('./elastic'),
     conf = require("../config"),
     indexName = conf.elastic.mainIndex;
 
+
 /*
 Param{
     userAuth,

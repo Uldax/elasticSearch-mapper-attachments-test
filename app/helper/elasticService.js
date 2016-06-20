@@ -211,8 +211,42 @@ var elasticService = {
         });
     },
 
+    searchTest: function () {
+        //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
+        return new Promise(function (resolve, reject) {
+            client.search({
+                index: indexName,
+                body: {
+                    "from": 0,
+                    "size": 19,
+                    "_source": {
+                        "excludes": [
+                            "attachment._content"
+                        ]
+                    },
+                    "query": {
+                        "match_all": {}
+                    },
+                    "highlight": {
+                        "fields": {
+                            "attachment.content": {
+                                "fragment_size": 150,
+                                "number_of_fragments": 3
+                            }
+                        }
+                    }
+                }
+            }).then(function (resp) {
+                resolve(resp);
+            }, function (err) {
+                reject(err);
+            });
+        });
+    },
+
     /*************** UTILS  **************** */
     //Warning count nedd few sec before insert to give the right value
+
     countByType: function (type) {
         return new Promise(function (resolve, reject) {
             client.count({
@@ -262,6 +296,7 @@ var elasticService = {
             .catch(function (err) {
                 throw new Error(err.message || err);
             });
+
     },
 
     countFromAnOtherWorld(type) {
