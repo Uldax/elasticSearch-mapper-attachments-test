@@ -184,7 +184,7 @@ var elasticBuilder = {
                     "document_id": data.document_id,
                     "version_id": data.version_id,
                     //if not set , add values instead of add to array
-                    "document_groups_ids": []
+                    "document_groups_ids": data.groupIds
                 }
                 return requestData;           
         },

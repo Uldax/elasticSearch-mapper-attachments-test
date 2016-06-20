@@ -23,17 +23,17 @@ var client = new elasticsearch.Client({
 
 var elasticService = {
     /*************** DOCUMENT  **************** */
-    createDocument: function (row) {
+    createDocument: function (row,groupIds) {
         //! fileSize > 104857600      
         return new Promise(function (resolve, reject) {
-            console.log("creation");
             var path = row.path;
             var data = {
                 document_id: row.file_id,
                 version_id: row.version_id,
                 log_data_id: row.log_data_id,
                 //TODO : name = file label not file version label
-                name: row.label
+                name: row.label,
+                groupIds : groupIds
             }
             try {
                 var requestData = elasticBuilder.createDocument(path, data);
@@ -43,7 +43,6 @@ var elasticService = {
                     type: 'document',
                     body: requestData
                 }).then(function (resp) {
-                    console.log(resp);
                     resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
                 }, function (err) {
                     reject(err.message || err);
@@ -172,7 +171,6 @@ var elasticService = {
 
     /*************** PIN  **************** */
     createPin: function (row, groupIds) {
-        //console.log(row)
         return new Promise(function (resolve, reject) {
             if (!groupIds) {
                 groupIds = [];
@@ -262,7 +260,7 @@ var elasticService = {
                 return client.indices.putMapping({ index: "opus", type: 'pin', body: mapping.pinMapping });
             })
             .catch(function (err) {
-                console.log(err.message || err);
+                throw new Error(err.message || err);
             });
     },
 

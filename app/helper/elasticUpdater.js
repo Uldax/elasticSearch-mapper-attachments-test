@@ -54,6 +54,8 @@ var elasticUpdater = {
                 var updateIds = [];
                 //dont't call update if another daemon is running
                 elasticUpdater.curentUpdate = true;
+                elasticUpdater.state = [];
+
                 updateModel.getUpdates()
                     .then(function (rows) {
                         var actionPromises = [];
@@ -75,7 +77,7 @@ var elasticUpdater = {
 
                     .then(function (lastResult) {
                         //In case of no action
-                        if (lastResult) {
+                        if (lastResult.status == "rejected") {
                             elasticUpdater.state.push(lastResult);
                         }
                         elasticUpdater.curentUpdate = false;
@@ -196,7 +198,9 @@ function actionDocument(op, update_id) {
                 if (op == "U") {
                     return elasticService.updateDocument(row_to_update);
                 } else if (op == "I") {
-                    return elasticService.createDocument(row_to_update);
+                     return documentModel.getGroupForFile(row_to_update.file_id).then(function (groupIds) {
+                        return elasticService.createDocument(row_to_update,groupIds);
+                    })          
                 } else {
                     throw new Error("Unknown op for document, op = " + op);
                 }

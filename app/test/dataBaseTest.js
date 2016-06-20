@@ -66,7 +66,7 @@ describe('Database Update', function () {
     });
 
     it("should add entry 'U' into update when file version is update for the same file", function (done) {
-      document.getVersionIdByFileLabel(fileLabel).then(function (rows) {
+      testModel.getVersionIdByFileLabel(fileLabel).then(function (rows) {
         rows.should.have.length(2);
         db.none("UPDATE file.version SET label =$1 WHERE version_id = $2",
           ["SuperTest", rows[1].version_id]).then(function () {

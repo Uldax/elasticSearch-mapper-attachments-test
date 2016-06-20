@@ -197,7 +197,7 @@ var testModel = {
 
     },
 
-    
+
     deletePins: function () {
         return new Promise(function (resolve, reject) {
             db.tx(function (t) {
@@ -216,7 +216,12 @@ var testModel = {
                     reject(error.message || error);
                 });
         })
-    }
+    },
+
+    getVersionIdByFileLabel: function (file_name) {
+        return db.any("SELECT file.version.version_id FROM file.file INNER JOIN file.version " +
+            "ON file.version.file_id = file.file.file_id WHERE file.label = $1", [file_name]);
+    },
 
 
 }
