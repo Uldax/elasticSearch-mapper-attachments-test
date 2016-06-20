@@ -226,15 +226,13 @@ var elasticBuilder = {
             return requestData;
         },
 
-        createPin: function (row) {
+        createPin: function (row,groupIds) {
             var requestData = {
                 "layou_label": row.label_layout,
                 "pin_id": row.pin_id,
-                "pin_content": row.pin_label,
-                "pinboard_label": row.pinboard_label
-            }
-            if (row.hasOwnProperty('vote_pin')) {
-                requestData.pin_vote = row.vote_pin;
+                "pin_content"  : row.pin_label,
+                "pinboard_label" : row.pinboard_label,
+                "pin_groups_ids" : groupIds,
             }
             return requestData;
         },

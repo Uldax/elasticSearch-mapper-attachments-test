@@ -1,4 +1,3 @@
-//TODO : add log data in every id
 "use strict";
 //Classe that consume builder to perform request to elastic serveur
 //All methode return a Promise with success message or error log from elasticServer
@@ -14,10 +13,7 @@ var elasticSearchPort = conf.elastic.port,
     protocol = conf.elastic.protocol,
     serverIp = conf.elastic.serverIp,
     indexName = conf.elastic.mainIndex,
-    typeName = "document",
     baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort
-
-
 
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
@@ -53,22 +49,19 @@ var elasticService = {
                     reject(err.message || err);
                 });
             } catch (err) {
-                console.log(err);
                 reject(err.message || err);
             }
         });
     },
-    //check if one result
+
     //The updates that have been performed still stick. In other words, the process is not rolled back, only aborted
     //While the first failure causes the abort all failures that are returned by the failing bulk request are returned in the failures element 
     //so it’s possible for there to be quite a few.
-    addGroupToDocument: function (group_id, document_id) {
+    sendUpdateByQuery: function (url, requestObject) {
         return new Promise(function (resolve, reject) {
-            console.log("adition");
-            var requestObject = elasticBuilder.addGroupToFile(group_id, document_id);
             var options = {
                 method: 'POST',
-                url: baseURL + "/opus/document/_update_by_query?refresh",
+                url: baseURL + url + "/_update_by_query?refresh",
                 json: requestObject,
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -79,78 +72,55 @@ var elasticService = {
                     switch (response.statusCode) {
                         //EveryThing works
                         case 200:
-                            if (typeof body != undefined) {
-                                if ((body.total == body.updated) && (body.total > 0)) {
-                                    resolve(body.total + " document updated");
-                                }
+                            if ((typeof body != undefined) &&
+                                (body.total == body.updated) && (body.total > 0)) {
+                                resolve(body.total + " document updated");
                             }
                             break;
                         //Conflict
                         case 409:
-                            console.log(requestObject);
                             console.log(body.version_conflicts + " conflicted");
-                            console.log(body.failures[0]);
                             reject(body.failures);
                             break;
 
                         //bad request
                         case 400:
-                            console.log(requestObject);
-                            reject(response.statusCode);
+                            reject("Bad request object");
                             break;
                         default:
-                            console.log("default");
-                            console
                             reject(response.statusCode);
                             break;
-                    }
-                    if (response.statusCode === 200) {
-                        if (typeof body != undefined) {
-                            if (body.total == body.updated && body.total > 0) {
-                                resolve(body.total + " document updated");
-                            }
-                            else {
-                                console.log(body.version_conflicts + " conflicted");
-                                console.log(body);
-                                console.log(requestObject);
-                                console.log(body.failures);
-                                reject(body.failures);
-                            }
-                        }
-                    } else {
-                        reject(body);
                     }
                 } else {
                     reject(err);
                 }
             })
         })
+
+    },
+
+    addGroupToDocument: function (group_id, document_id) {
+        return elasticService.sendUpdateByQuery("/opus/document/", elasticBuilder.addGroupToFile(group_id, document_id));
     },
 
     removeGroupToDocument: function (group_id, document_id) {
-        var requestObject = elasticBuilder.removeGroupToDocument(group_id, document_id);
-        var options = {
-            method: 'POST',
-            url: baseURL + "/opus/document/_update_by_query",
-            json: requestObject,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        };
-        return new Promise(function (resolve, reject) {
-            request(options, function (err, response, body) {
-                if (!err) {
-                    if (response.statusCode === 200) {
-                        if (typeof body != undefined) {
-                            resolve(JSON.parse(body));
-                        }
-                    } else {
-                        reject(err);
-                    }
-                }
-            })
-        })
+        return elasticService.sendUpdateByQuery("/opus/document/", elasticBuilder.removeGroupToDocument(group_id, document_id));
     },
+
+    updatePinBoard: function (id) {
+        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.updatePinBoard(group_id, document_id));
+    },
+
+    addGroupToPin: function (group_id, pin_id) {
+        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.addGroupToPin(group_id, document_id));
+    },
+
+    removeGroupToPin: function (group_id, pin_id) {
+        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.removeGroupToPin(group_id, document_id));
+    },
+
+
+    /*************** UPDATE BY QUERY : Multi update  **************** */
 
     //In update we don't reindex the content of file :
     //if the content change , there is a new version so it's insertDocument
@@ -201,62 +171,31 @@ var elasticService = {
 
 
     /*************** PIN  **************** */
-    createPin: function (row) {
+    createPin: function (row, groupIds) {
+        //console.log(row)
         return new Promise(function (resolve, reject) {
-            var requestData = elasticBuilder.createPin(row);
-            if (requestData) {
+            if (!groupIds) {
+                groupIds = [];
+            }
+            try {
+                var requestData = elasticBuilder.createPin(row, groupIds);
                 client.create({
                     index: indexName,
                     type: 'pin',
-                    id: row.pin_id,
+                    id: row.log_data_id,
                     body: requestData
                 }).then(function (resp) {
                     resolve("PIN id " + row.pin_id + " inserted");
                 }, function (err) {
-                    reject(err.message || err);
+                    reject("in create pin" + (err.message || err));
                 });
-            } else {
-                reject("error in requestData");
+            } catch (error) {
+                reject(error.message || error);
             }
+
         });
     },
 
-    createPinBoard: function (row) {
-
-    },
-
-    updatePinBoard: function (id) {
-
-    },
-
-    addGroupToPin: function (group_id, pin_id) {
-        var options = {
-            method: 'POST',
-            url: baseURL + "/opus/document/_update_by_query",
-            json: objectMapping,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Transfer-Encoding': 'chunked'
-            }
-        };
-        return new Promise(function (resolve, reject) {
-            request(options, function (err, response, body) {
-                if (!err) {
-                    if (response.statusCode === 200) {
-                        if (typeof body != undefined) {
-                            resolve(JSON.parse(body));
-                        }
-                    } else {
-                        reject(err);
-                    }
-                }
-            })
-        })
-    },
-
-    removeGroupToPin: function (group_id, pin_id) {
-
-    },
 
     /*************** SEARCH  **************** */
     search: function (buildOption) {

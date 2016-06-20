@@ -6,11 +6,24 @@ var documentModel = require('../models/document.js');
 var elasticService = require("./elasticService");
 var utils = require("./utils");
 
+
+var Action = class Action {
+    constructor(update_id, type_id, op) {
+        this.update_id = update_id;
+        this.type_id = type_id;
+        this.op = op;
+        this.status = "pending"
+        this.promise = null;
+    }
+}
+
+
 var elasticUpdater = {
 
     //Boolean use to know if we can update now or not
     curentUpdate: false,
 
+    //All result state after update
     state: [],
 
     //Previous use of notify/listen form pgsql but we choose to do schedule update
@@ -35,7 +48,6 @@ var elasticUpdater = {
     },
 
     //Daemon that do update every minute
-    //TODO Create object Action
     readUpdateTable: function () {
         return new Promise(function (resolve, reject) {
             if (!elasticUpdater.curentUpdate) {
@@ -53,23 +65,23 @@ var elasticUpdater = {
                             }
                         }
                         if (actionPromises.length > 0) {
-                            //refresh
+                            //refresh to allowed direct search after update
                             actionPromises.push(function () { return utils.reflect(elasticService.refresh()) });
                             return pseries(actionPromises)
-                            //return Promise.all(actionPromises.map(utils.reflect))
                         } else {
                             return Promise.resolve();
                         }
                     })
+
                     .then(function (lastResult) {
                         //In case of no action
                         if (lastResult) {
                             elasticUpdater.state.push(lastResult);
                         }
                         elasticUpdater.curentUpdate = false;
-                        //TODO handle rejected
+                        //TODO handle rejected 
                         if (updateIds.length > 0) {
-                            //return updateModel.deleteUpdatesByIds(updateIds);
+                            return updateModel.deleteUpdatesByIds(updateIds);
                         } else {
                             return Promise.resolve();
                         }
@@ -126,14 +138,17 @@ function pseries(list) {
 //Return promise
 // eq factory
 function createActionUpdate(element) {
-    var op = element.op;
-    var table_name = element.table_name;
-    var type_id = element.type_id;
-    var update_id = element.update_id;
-    var actionDefiner = null;
+
+    var table_name = element.table_name,
+        update_id = element.update_id,
+        type_id = element.type_id,
+        op = element.op;
+
+    var action = new Action(update_id, type_id, op);
     //table_name = "et";
     switch (table_name) {
         case 'pin':
+            //action.promise = actionPin(op, update_id)
             return actionPin(op, update_id);
         case 'pinboard':
             if (op != "I") {
@@ -172,11 +187,10 @@ function createActionUpdate(element) {
 
 
 /*************** ACTION TABLE **************** */
-//Pather : get the information to index based on log_data_id insert in update table
+//Patern : get the information to index based on log_data_id insert in update table
 //then resolve the service call associate to the operation
 function actionDocument(op, update_id) {
     return new Promise(function (resolve, reject) {
-        console.log("document");
         documentModel.getVersionById(update_id)
             .then(function (row_to_update) {
                 if (op == "U") {
@@ -184,15 +198,14 @@ function actionDocument(op, update_id) {
                 } else if (op == "I") {
                     return elasticService.createDocument(row_to_update);
                 } else {
-                    throw new Error("unknown op for document, op = " + op);
+                    throw new Error("Unknown op for document, op = " + op);
                 }
             })
             .then(function (status) {
-                console.log(status);
                 resolve(status);
             })
             .catch(function (err) {
-                reject("in action document " + (err.message || err));
+                reject("In action document " + (err.message || err));
             })
     });
 }
@@ -209,16 +222,14 @@ function actionFile_Group(op, log_data_id) {
                 } else if (op === "D" || op == "T") {
                     return (elasticService.removeGroupToDocument(group_id, document_id));
                 } else {
-                    throw new Error("unknow op");
+                    throw new Error("Unknow op");
                 }
             })
 
             .then(function (status) {
-                console.log(status);
                 resolve(status);
             })
             .catch(function (err) {
-                console.log(err.failures);
                 reject("in actionFile_Group " + (err.message || err));
             })
     });
@@ -227,20 +238,27 @@ function actionFile_Group(op, log_data_id) {
 
 //No delete
 function actionPin(op, update_id) {
-    new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         //Get the ligne to update
-        pinModel.getPinInfoById(update_id).then(function (row_to_insert) {
-            if (op == "I") {
-                resolve(elasticService.createPin(row_to_insert));
-            }
-            if (op == "U") {
-                resolve(elasticService.updatePin(row_to_update));
-            } else {
-                reject("unknow op");
-            }
-        }).catch(function (err) {
-            reject("in actionPin " + (err.message || err));
-        })
+        pinModel.getPinInfoById(update_id)
+            .then(function (row_to_insert) {
+                // okay, I have both the "row_to_insert" and the "groupIds"
+                if (op == "I") {
+                    return pinModel.getGroupForPinboard(row_to_insert.pinboard_id).then(function (groupIds) {
+                        return elasticService.createPin(row_to_insert, groupIds);
+                    })
+                }
+                else if (op == "U") {
+                    return elasticService.updatePin(row_to_update);
+                } else {
+                    throw new Error("Unknow op");
+                }
+            }).then(function (status) {
+                resolve(status);
+            })
+            .catch(function (err) {
+                reject("in actionPin " + (err.message || err));
+            })
     });
 }
 

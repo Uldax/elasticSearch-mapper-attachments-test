@@ -93,7 +93,7 @@ var testModel = {
         return new Promise(function (resolve, reject) {
             var P1 = update.deleteUpdates();
             var P2 = testModel.deleteFiles();
-            var P3 = pin.deletePins();
+            var P3 = testModel.deletePins();
             //TODO : delete user
             var promiseArray = [P1, P2, P3];
             //don't know why didn't work
@@ -106,7 +106,6 @@ var testModel = {
                 })
         })
     },
-
     restart_db: function () {
         return testModel.removeTrigger()
             .then(function (mess) {
@@ -116,7 +115,7 @@ var testModel = {
                 return testModel.setTrigger()
             })
             .catch(function (err) {
-                reject(err.message || err);
+                throw new Error(err.message || err);
             })
     },
 
@@ -197,6 +196,27 @@ var testModel = {
         })
 
     },
+
+    
+    deletePins: function () {
+        return new Promise(function (resolve, reject) {
+            db.tx(function (t) {
+                // this = t = transaction protocol context;
+                // this.ctx = transaction config + state context;
+                return t.batch([
+                    t.none("DELETE FROM pinboard.pin"),
+                    t.none("DELETE FROM pinboard.pinboard"),
+                    t.none("DELETE FROM pinboard.layout"),
+                ]);
+            })
+                .then(function (data) {
+                    resolve("Pin removed");
+                })
+                .catch(function (error) {
+                    reject(error.message || error);
+                });
+        })
+    }
 
 
 }
