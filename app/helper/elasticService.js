@@ -24,19 +24,21 @@ var client = new elasticsearch.Client({
     log: 'error'
 });
 
+
 var elasticService = {
     /*************** DOCUMENT  **************** */
     createDocument: function (row) {
-        var path = row.path;
-        var data = {
-            document_id: row.file_id,
-            version_id: row.version_id,
-            log_data_id: row.log_data_id,
-            //TODO : name = file label not file version label
-            name: row.label
-        }
         //! fileSize > 104857600      
         return new Promise(function (resolve, reject) {
+            console.log("creation");
+            var path = row.path;
+            var data = {
+                document_id: row.file_id,
+                version_id: row.version_id,
+                log_data_id: row.log_data_id,
+                //TODO : name = file label not file version label
+                name: row.label
+            }
             try {
                 var requestData = elasticBuilder.createDocument(path, data);
                 client.create({
@@ -45,41 +47,74 @@ var elasticService = {
                     type: 'document',
                     body: requestData
                 }).then(function (resp) {
+                    console.log(resp);
                     resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
                 }, function (err) {
                     reject(err.message || err);
                 });
             } catch (err) {
+                console.log(err);
                 reject(err.message || err);
             }
         });
     },
-
     //check if one result
     //The updates that have been performed still stick. In other words, the process is not rolled back, only aborted
     //While the first failure causes the abort all failures that are returned by the failing bulk request are returned in the failures element 
     //so it’s possible for there to be quite a few.
     addGroupToDocument: function (group_id, document_id) {
-        var requestObject = elasticBuilder.addGroupToFile(group_id, document_id);
-        var options = {
-            method: 'POST',
-            url: baseURL + "/opus/document/_update_by_query",
-            json: requestObject,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            }
-        };
         return new Promise(function (resolve, reject) {
+            console.log("adition");
+            var requestObject = elasticBuilder.addGroupToFile(group_id, document_id);
+            var options = {
+                method: 'POST',
+                url: baseURL + "/opus/document/_update_by_query?refresh",
+                json: requestObject,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                }
+            };
             request(options, function (err, response, body) {
-                console.log(body);
                 if (!err) {
+                    switch (response.statusCode) {
+                        //EveryThing works
+                        case 200:
+                            if (typeof body != undefined) {
+                                if ((body.total == body.updated) && (body.total > 0)) {
+                                    resolve(body.total + " document updated");
+                                }
+                            }
+                            break;
+                        //Conflict
+                        case 409:
+                            console.log(requestObject);
+                            console.log(body.version_conflicts + " conflicted");
+                            console.log(body.failures[0]);
+                            reject(body.failures);
+                            break;
+
+                        //bad request
+                        case 400:
+                            console.log(requestObject);
+                            reject(response.statusCode);
+                            break;
+                        default:
+                            console.log("default");
+                            console
+                            reject(response.statusCode);
+                            break;
+                    }
                     if (response.statusCode === 200) {
                         if (typeof body != undefined) {
-                            if (body.total == body.updated) {
+                            if (body.total == body.updated && body.total > 0) {
                                 resolve(body.total + " document updated");
                             }
                             else {
-                                reject(body.version_conflicts + " conflicted")
+                                console.log(body.version_conflicts + " conflicted");
+                                console.log(body);
+                                console.log(requestObject);
+                                console.log(body.failures);
+                                reject(body.failures);
                             }
                         }
                     } else {
@@ -257,6 +292,14 @@ var elasticService = {
             requestTimeout: 30000,
             // undocumented params are appended to the query string
             hello: "elasticsearch"
+        });
+    },
+
+    //Explicitly refresh one or more index 
+    //making all operations performed since the last refresh available for search.
+    refresh: function (type) {
+        return client.indices.refresh({
+            index: "opus"
         });
     },
 

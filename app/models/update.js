@@ -18,7 +18,11 @@ var updateModel = {
     
     deleteUpdates: function () {
         return db.none("DELETE FROM public.update");
-    }
+    },
+
+    deleteUpdatesByIds: function (ids) {
+        return db.none("DELETE FROM public.update WHERE update_id IN ($1:csv)",[ids]);
+    },
 
 
 }

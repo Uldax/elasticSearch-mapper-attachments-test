@@ -11,27 +11,35 @@ var elasticUpdater = {
     //Boolean use to know if we can update now or not
     curentUpdate: false,
 
+    state: [],
+
     //Previous use of notify/listen form pgsql but we choose to do schedule update
     start: function () {
         console.log("get downtime update...");
         //setInterval(elasticUpdater.readUpdateTable, 10000);
-        elasticUpdater.readUpdateTable().then(function(state){
-            var rejectResult = state.filter(x => x.status === "rejected");
-            console.log("Update todo :" + state.length);
-            console.log("Numbers of failded :" + rejectResult.length);
-            rejectResult.forEach(function(element) {
-                   console.log(element.e);
+        elasticUpdater.readUpdateTable().then(function () {
+            if (elasticUpdater.state.length > 0)
+                console.log(elasticUpdater.state);
+            var rejectResult = elasticUpdater.state.filter(x => x.status === "rejected");
+            //var updateLength = elasticUpdater.state.length > 0 ? (elasticUpdater.state.length - 1) : 0;
+            var updateLength = elasticUpdater.state.length;
+            console.log("Update todo :" + updateLength);
+            console.log("Numbers of failed :" + rejectResult.length);
+            rejectResult.forEach(function (element) {
+                console.log(element.e);
             }, this);
-         
-        }).catch(function(err) {
+
+        }).catch(function (err) {
             console.log(err);
         })
     },
 
     //Daemon that do update every minute
+    //TODO Create object Action
     readUpdateTable: function () {
         return new Promise(function (resolve, reject) {
             if (!elasticUpdater.curentUpdate) {
+                var updateIds = [];
                 //dont't call update if another daemon is running
                 elasticUpdater.curentUpdate = true;
                 updateModel.getUpdates()
@@ -40,109 +48,148 @@ var elasticUpdater = {
                         for (var row in rows) {
                             if (rows.hasOwnProperty(row)) {
                                 var element = rows[row];
-                                var action = createActionUpdate(element)
-                                actionPromises.push(action);
+                                actionPromises.push(createCallbackAction(element));
+                                updateIds.push(element.update_id);
                             }
                         }
-                        //
-                        return Promise.all(actionPromises.map(utils.reflect))
-                        //console.log("length of promiseArray " + actionPromises.length);
-                        // Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
-                        // la promesse all est rejetée immédiatement avec la valeur rejetée par la promesse en question, 
-                    }).then(function (results) {
+                        if (actionPromises.length > 0) {
+                            //refresh
+                            actionPromises.push(function () { return utils.reflect(elasticService.refresh()) });
+                            return pseries(actionPromises)
+                            //return Promise.all(actionPromises.map(utils.reflect))
+                        } else {
+                            return Promise.resolve();
+                        }
+                    })
+                    .then(function (lastResult) {
+                        //In case of no action
+                        if (lastResult) {
+                            elasticUpdater.state.push(lastResult);
+                        }
                         elasticUpdater.curentUpdate = false;
                         //TODO handle rejected
-                        resolve(results);
+                        if (updateIds.length > 0) {
+                            //return updateModel.deleteUpdatesByIds(updateIds);
+                        } else {
+                            return Promise.resolve();
+                        }
+                    })
+                    .then(function () {
+                        resolve();
                     })
                     .catch(function (err) {
-                        console.log("catch all");
                         elasticUpdater.curentUpdate = false;
                         reject(err.message || err);
                     })
             }
             else {
-                reject("update already in progress")
+                reject("Update already in progress")
             }
         })
     }
 }
 
 
+/*************** PROMISE UTILS  **************** */
 
+//Magic here with closure
+// Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
+// la promesse all est rejetée immédiatement avec la valeur rejetée par la promesse en question, 
+// d'ou l'utilisation de reflect
+function createCallbackAction(element) {
+    return function () {
+        return utils.reflect(createActionUpdate(element));
+    };
+}
+
+//Promise.all(), but which doesn't execute the promises in paralle
+function pseries(list) {
+    var p = Promise.resolve();
+    //La méthode reduce() applique une fonction qui est un « accumulateur »
+    // traite chaque valeur d'une liste (de la gauche vers la droite)
+    // afin de la réduire à une seule valeur.
+    return list.reduce(function (pacc, fn) {
+        return pacc = pacc.then(function (res) {
+            if (res) {
+                elasticUpdater.state.push(res);
+            }
+            return fn();
+        });
+    }, p);
+
+}
 
 
 /*************** ACTION  **************** */
 // Define if it's update/delete or insert for each update
 
-function actionResolver(actionDefiner, update_id, type_id) {
-    return new Promise(function (resolve, reject) {
-        actionDefiner
-            .then(function (message) {
-                console.log(message);
-                return updateModel.deleteUpdate(update_id, type_id)
-            })
-            .then(function () {
-                resolve("action done");
-            })
-            .catch(function (err) {
-                reject("Action resolver : " + (err.message || err));
-            })
-    })
-}
-
+//Return promise
+// eq factory
 function createActionUpdate(element) {
-    return new Promise(function (resolve, reject) {
-        var op = element.op;
-        var table_name = element.table_name;
-        var type_id = element.type_id;
-        var update_id = element.update_id;
-        var actionDefiner = null;
-        //table_name = "et";
-        switch (table_name) {
-            case 'pin':
-                actionDefiner = actionPin(op, update_id);
-                break;
-            case 'pinboard':
-                if (op != "I") {
-                    actionDefiner = actionPinboard(update_id);
-                }
-                break;
-            case 'version':
-                actionDefiner = actionDocument(op, update_id);
-                break;
+    var op = element.op;
+    var table_name = element.table_name;
+    var type_id = element.type_id;
+    var update_id = element.update_id;
+    var actionDefiner = null;
+    //table_name = "et";
+    switch (table_name) {
+        case 'pin':
+            return actionPin(op, update_id);
+        case 'pinboard':
+            if (op != "I") {
+                return actionPinboard(update_id);
+            }
+            break;
+        case 'version':
+            return actionDocument(op, update_id);
 
-            case 'file_group':
-                actionDefiner = actionFile_Group(op, update_id);
-                break;
+        case 'file_group':
+            return actionFile_Group(op, update_id);
 
-            default:
-                break;
-        }
-        if (actionDefiner) {
-            //if resolved the promise is resolved else if return it's pending
-            resolve(actionResolver(actionDefiner, update_id, type_id));
-        }
-        else {
-            reject("CreateActionUpdate : no action found");
-        }
-    })
+        default:
+            break;
+    }
+    return Promise.reject("CreateActionUpdate : no action found");
 }
+
+// function actionResolver(actionDefiner, update_id, type_id) {
+//     return new Promise(function (resolve, reject) {
+//         actionDefiner
+//             .then(function (message) {
+//                 console.log(message);
+//                 return updateModel.deleteUpdate(update_id, type_id)
+//             })
+//             .then(function () {
+//                 resolve("action done");
+//             })
+//             .catch(function (err) {
+//                 reject("Action resolver : " + (err.message || err));
+//             })
+//     })
+// }
+
+
+
 
 /*************** ACTION TABLE **************** */
 //Pather : get the information to index based on log_data_id insert in update table
 //then resolve the service call associate to the operation
-
 function actionDocument(op, update_id) {
     return new Promise(function (resolve, reject) {
+        console.log("document");
         documentModel.getVersionById(update_id)
             .then(function (row_to_update) {
                 if (op == "U") {
-                    resolve(elasticService.updateDocument(row_to_update));
+                    return elasticService.updateDocument(row_to_update);
                 } else if (op == "I") {
-                    resolve(elasticService.createDocument(row_to_update));
+                    return elasticService.createDocument(row_to_update);
                 } else {
-                    reject("unknown op for document, op = " + op);
+                    throw new Error("unknown op for document, op = " + op);
                 }
+            })
+            .then(function (status) {
+                console.log(status);
+                resolve(status);
             })
             .catch(function (err) {
                 reject("in action document " + (err.message || err));
@@ -158,14 +205,20 @@ function actionFile_Group(op, log_data_id) {
                 var group_id = row.group_id;
                 var document_id = row.file_id;
                 if (op === "I") {
-                    resolve(elasticService.addGroupToDocument(group_id, document_id));
+                    return (elasticService.addGroupToDocument(group_id, document_id));
                 } else if (op === "D" || op == "T") {
-                    resolve(elasticService.removeGroupToDocument(group_id, document_id));
+                    return (elasticService.removeGroupToDocument(group_id, document_id));
                 } else {
-                    reject("unknow op");
+                    throw new Error("unknow op");
                 }
             })
+
+            .then(function (status) {
+                console.log(status);
+                resolve(status);
+            })
             .catch(function (err) {
+                console.log(err.failures);
                 reject("in actionFile_Group " + (err.message || err));
             })
     });
@@ -178,10 +231,10 @@ function actionPin(op, update_id) {
         //Get the ligne to update
         pinModel.getPinInfoById(update_id).then(function (row_to_insert) {
             if (op == "I") {
-                resolve (elasticService.createPin(row_to_insert));
+                resolve(elasticService.createPin(row_to_insert));
             }
             if (op == "U") {
-                resolve (elasticService.updatePin(row_to_update));
+                resolve(elasticService.updatePin(row_to_update));
             } else {
                 reject("unknow op");
             }

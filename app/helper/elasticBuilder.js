@@ -186,8 +186,7 @@ var elasticBuilder = {
                     //if not set , add values instead of add to array
                     "document_groups_ids": []
                 }
-                return requestData;
-            
+                return requestData;           
         },
 
         //Files are in config/script under elasticSearch folder

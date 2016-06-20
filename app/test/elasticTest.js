@@ -130,7 +130,7 @@ describe('Elastic Search', function () {
             })
 
             it("Document insert should remove update after tracker and add field in elastic", function (done) {
-                this.timeout(15000);
+                this.timeout(3000);
                 return Promise.resolve()
                     .then(function () {
                         return testModel.insertFileInFolder("root", fileLabel, myDocPath);

@@ -68,13 +68,21 @@ var utils = {
     },
 
     //allow to continue promise.all regardless of if one promise has failed.
+    // todo add id update in promise reject
     reflect: function (promise) {
-        return promise.then(function (v) {
-            return { v: v, status: "resolved" }
-        },
-            function (e) {
-                return { e: e, status: "rejected" }
-            });
+        if (utils.isFunction(promise)) {
+            return promise().then(function (v) { return { v: v, status: "resolved" } },
+                function (e) { return { e: e, status: "rejected" } });
+        } else {
+            return promise.then(function (v) { return { v: v, status: "resolved" } },
+                function (e) { return { e: e, status: "rejected" } });
+        }
+
+    },
+
+    isFunction: function (functionToCheck) {
+        var getType = {};
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     },
 
     //Promise catch
