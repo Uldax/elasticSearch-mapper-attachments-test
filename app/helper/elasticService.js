@@ -23,7 +23,7 @@ var client = new elasticsearch.Client({
 
 var elasticService = {
     /*************** DOCUMENT  **************** */
-    createDocument: function (row,groupIds) {
+    createDocument: function (row, groupIds) {
         //! fileSize > 104857600      
         return new Promise(function (resolve, reject) {
             var path = row.path;
@@ -33,7 +33,7 @@ var elasticService = {
                 log_data_id: row.log_data_id,
                 //TODO : name = file label not file version label
                 name: row.label,
-                groupIds : groupIds
+                groupIds: groupIds
             }
             try {
                 var requestData = elasticBuilder.createDocument(path, data);
@@ -52,6 +52,37 @@ var elasticService = {
             }
         });
     },
+
+    //In update we don't reindex the content of file :
+    //if the content change , there is a new version so it's insertDocument
+    updateDocument: function (row) {
+        //Get info from db 
+        // format body
+        var versionID = row.document_id;
+        var fileName = row.document_name;
+        return new Promise(function (resolve, reject) {
+            //ReindexDocument         
+            // TODO : reidex only if path change  
+            var requestData = elasticBuilder.createDocument(fileName);
+            if (requestData) {
+                client.update({
+                    index: indexName,
+                    type: 'document',
+                    id: versionID,
+                    body: requestData
+                }).then(function (resp) {
+                    resolve("Document with " + versionID + " updated");
+                }, function (err) {
+                    reject(err.message || err);
+                });
+            } else {
+                reject();
+            }
+        })
+    },
+
+    /*************** UPDATE BY QUERY : Multi update  **************** */
+    //update by query is not currently implement into elasticJS API
 
     //The updates that have been performed still stick. In other words, the process is not rolled back, only aborted
     //While the first failure causes the abort all failures that are returned by the failing bulk request are returned in the failures element 
@@ -79,6 +110,7 @@ var elasticService = {
                         //Conflict
                         case 409:
                             console.log(body.version_conflicts + " conflicted");
+                            //TODO : handle error
                             reject(body.failures);
                             break;
 
@@ -118,37 +150,6 @@ var elasticService = {
         return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.removeGroupToPin(group_id, document_id));
     },
 
-
-    /*************** UPDATE BY QUERY : Multi update  **************** */
-
-    //In update we don't reindex the content of file :
-    //if the content change , there is a new version so it's insertDocument
-    updateDocument: function (row) {
-        //Get info from db 
-        // format body
-        var versionID = row.document_id;
-        var fileName = row.document_name;
-        return new Promise(function (resolve, reject) {
-            //ReindexDocument         
-            // TODO : reidex only if path change  
-            var requestData = elasticBuilder.createDocument(fileName);
-            if (requestData) {
-                client.update({
-                    index: indexName,
-                    type: 'document',
-                    id: versionID,
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("Document with " + versionID + " updated");
-                }, function (err) {
-                    reject(err.message || err);
-                });
-            } else {
-                reject();
-            }
-        })
-    },
-
     /*************** IMPORT  **************** */
     bulkPin: function (rows) {
         return new Promise(function (resolve, reject) {
@@ -167,7 +168,6 @@ var elasticService = {
             }
         })
     },
-
 
     /*************** PIN  **************** */
     createPin: function (row, groupIds) {
@@ -193,7 +193,26 @@ var elasticService = {
 
         });
     },
+    //pin_log_data_id is the id of a pin in elastic index
+    //todo upsert
+    sendUpdatePin: function (pin_log_data_id, requestData) {
 
+        return client.update({
+            index: indexName,
+            type: 'pin',
+            id: pin_log_data_id,
+            body: requestData
+        })
+    },
+
+    updateVote: function (log_data_id, vote) {
+        var requestData = {
+            "doc": {
+                "pin_vote": vote
+            }
+        }
+        return elasticService.sendUpdatePin(log_data_id, requestData);
+    },
 
     /*************** SEARCH  **************** */
     search: function (buildOption) {
@@ -276,7 +295,7 @@ var elasticService = {
 
     //Create first index and mapping for elastic
     //TODO test
-    createIndex: function () {
+    createIndex: function (indexName) {
         //Allow use to do the promise one after the other
         return client.indices.exists({ index: "opus" })
             .then(function (exist) {

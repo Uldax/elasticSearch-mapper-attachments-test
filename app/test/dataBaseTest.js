@@ -159,7 +159,6 @@ describe('Database Update', function () {
 
   });
 
-
   describe('Pin', function () {
     var layout_id = 0;
     var pinboardId = 0;

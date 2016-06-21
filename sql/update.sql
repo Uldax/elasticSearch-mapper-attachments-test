@@ -10,6 +10,22 @@ CREATE TABLE public.update(
 
 ALTER TABLE public.update ADD CONSTRAINT FK_update_type_id FOREIGN KEY (type_id) REFERENCES content.type(type_id);
 
+-- be sur every type are set
+
+INSERT into content.type(
+  table_schema,
+  table_name,
+  application_id,
+  name_token_id,
+  function_name_to_notify_groups_about_an_event
+  ) VALUES(
+      'pinboard',
+      'vote_pin',
+      6,
+      16,
+      'pinboard.get_groups_to_notify_about_pin'
+  );
+
 
 ------------------------------------------------------------
 -- Trigger: version change

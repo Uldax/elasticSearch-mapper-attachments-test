@@ -234,9 +234,11 @@ var elasticBuilder = {
                 "pin_content"  : row.pin_label,
                 "pinboard_label" : row.pinboard_label,
                 "pin_groups_ids" : groupIds,
+                "pin_vote" : 0
             }
             return requestData;
         },
+
 
         //Function which returns the JSON to index pins
         bulkPin: function (rows) {

@@ -73,11 +73,11 @@ var testModel = {
                         "FOR EACH ROW " +
                         "EXECUTE PROCEDURE on_change()"),
 
-                    // t.none("CREATE TRIGGER vote_change_trigger " +
-                    //     "AFTER UPDATE " +
-                    //     "ON pinboard.vote_pin " +
-                    //     "FOR EACH ROW " +
-                    //     "EXECUTE PROCEDURE on_change()")
+                    t.none("CREATE TRIGGER vote_change_trigger " +
+                        "AFTER INSERT OR UPDATE " +
+                        "ON pinboard.vote_pin " +
+                        "FOR EACH ROW " +
+                        "EXECUTE PROCEDURE on_change()")
                 ]);
             })
                 .then(function (data) {
