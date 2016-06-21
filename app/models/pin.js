@@ -28,7 +28,7 @@ var pinModel = {
     },
     
     getGroupForPinboardByLogdata: function (log_data_id) {
-        return db.any("SELECT group_id,pinboard_id " +
+        return db.one("SELECT group_id,pinboard_id " +
             "FROM pinboard.pinboard_group " +
             "WHERE pinboard.pinboard_group.log_data_id = $1 ", log_data_id);
     },

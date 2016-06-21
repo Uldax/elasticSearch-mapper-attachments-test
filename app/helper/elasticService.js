@@ -85,9 +85,14 @@ var elasticService = {
                     switch (response.statusCode) {
                         //EveryThing works
                         case 200:
+                            //TODO handle 
+
                             if ((typeof body != undefined) &&
                                 (body.total == body.updated) && (body.total > 0)) {
                                 resolve(body.total + " document updated");
+                            } else{
+                                //TODO handle other case
+                                reject(body)
                             }
                             break;
                         //Conflict
@@ -106,6 +111,7 @@ var elasticService = {
                         case 500 :
                             reject("Bad request object");
                         default:
+                            console.log("default");
                             reject(response.statusCode);
                             break;
                     }

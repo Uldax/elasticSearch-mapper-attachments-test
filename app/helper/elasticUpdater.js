@@ -89,10 +89,10 @@ var elasticUpdater = {
     }
 }
 
-
 //Promise.all(), but which doesn't execute the promises in paralle
 function pseries(list) {
     var p = Promise.resolve();
+    var intialSize = list.length;
     //La méthode reduce() applique une fonction qui est un « accumulateur »
     // traite chaque valeur d'une liste (de la gauche vers la droite)
     // afin de la réduire à une seule valeur.
@@ -101,6 +101,7 @@ function pseries(list) {
             if (res) {
                 //Store the result of every action
                 elasticUpdater.state.push(res);
+                console.log(elasticUpdater.state.length + " of " + intialSize);
             }
             return fn();
         });
@@ -149,4 +150,3 @@ function createCallbackAction(element) {
 // }
 
 module.exports = elasticUpdater;
-

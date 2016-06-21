@@ -177,6 +177,7 @@ var elasticBuilder = {
                 "layou_label": row.label_layout,
                 "pin_id": row.pin_id,
                 "pin_content": row.pin_label,
+                "pinboard_id" : row.pinboard_id,
                 "pinboard_label": row.pinboard_label,
                 "pin_groups_ids": [],
                 "pin_vote": 0
