@@ -219,7 +219,6 @@ describe('Elastic Search', function () {
             it("Layout unindex");
         })
 
-
         describe('Elastic error', function () {
             it('Updater should continue even if one update failed but update stay in stage', function (done) {
                 this.timeout(3000);
@@ -236,8 +235,8 @@ describe('Elastic Search', function () {
                         return updater.readUpdateTable();
                     })
                     .then(function (mess) {
-                        mess.should.have.length(2);
-                        var rejectResult = mess.filter(x => x.status === "rejected");
+                        updater.state.should.have.length(2);
+                        var rejectResult = updater.state.filter(x => x.status === "rejected");
                         rejectResult.should.have.length(1);
                         return update.getUpdates();
                     })

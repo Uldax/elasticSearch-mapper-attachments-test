@@ -22,12 +22,12 @@ var documentModel = {
         return db.one('SELECT version_id,version.label AS labelVersion, file.label,version.log_data_id,version.valid,path,version.file_id FROM file.version INNER JOIN file.file ON file.version.file_id = file.file.file_id WHERE version.log_data_id = $1', log_data_id);
     },
 
-
-    getVersionIdByFileLabel: function (file_name) {
-        return db.any("SELECT file.version.version_id FROM file.file INNER JOIN file.version " +
-            "ON file.version.file_id = file.file.file_id WHERE file.label = $1", [file_name]);
+    //action file
+    getGroupForFile: function (file_id) {
+        return db.any('SELECT group_id FROM file.file_group WHERE file_id = $1', file_id);
     },
 
+    //actionFile_Group
     getFile_GroupByLogData: function (log_data_id) {
         return db.one("SELECT file_id,group_id FROM file.file_group WHERE log_data_id = $1", [log_data_id]);
     }

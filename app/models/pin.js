@@ -18,10 +18,12 @@ var pinModel = {
             "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
             "WHERE pinboard.pin.log_data_id = $1 ", log_data_id);
     },
-    
+
+    //vote pin and log_data_id from id to update 
     getPinVote: function (log_data_id) {
-        return db.one("SELECT vote_pin.pin_id, pinboard.vote_pin.vote " +
+        return db.one("SELECT pinboard.pin.log_data_id, pinboard.vote_pin.vote " +
             "FROM pinboard.vote_pin " +
+            "INNER JOIN pinboard.pin ON pinboard.vote_pin.pin_id = pinboard.pin.pin_id " +
             "WHERE pinboard.vote_pin.log_data_id = $1 ", log_data_id);
     },
     
