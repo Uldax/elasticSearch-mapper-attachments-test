@@ -27,10 +27,10 @@ var pinModel = {
             "WHERE pinboard.vote_pin.log_data_id = $1 ", log_data_id);
     },
     
-    getGroupForPinboard: function (pinboard_id) {
-        return db.any("SELECT group_id " +
+    getGroupForPinboardByLogdata: function (log_data_id) {
+        return db.any("SELECT group_id,pinboard_id " +
             "FROM pinboard.pinboard_group " +
-            "WHERE pinboard.pinboard_group.pinboard_id = $1 ", pinboard_id);
+            "WHERE pinboard.pinboard_group.log_data_id = $1 ", log_data_id);
     },
 
 

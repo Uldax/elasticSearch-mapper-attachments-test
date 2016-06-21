@@ -16,8 +16,9 @@ var elasticUpdater = {
     //Used of notify/listen form pgsql but we choose to use schedule update
     start: function () {
         //setInterval(elasticUpdater.readUpdateTable, 10000);
+        console.log("get downtieme update")
         elasticUpdater.readUpdateTable().then(function () {
-            if(elasticUpdater.state.length > 0) {
+            if (elasticUpdater.state.length > 0) {
                 console.log(elasticUpdater.state);
             }
             var rejectResult = elasticUpdater.state.filter(x => x.status === "rejected");
@@ -28,6 +29,7 @@ var elasticUpdater = {
                 console.log(element.e);
             }, this);
         }).catch(function (err) {
+            console.log("Not in action")
             console.log(err);
         })
     },
@@ -111,7 +113,7 @@ function pseries(list) {
 function reflect(promise) {
     if (utils.isFunction(promise)) {
         return promise().then(function (v) { return { v: v, status: "resolved" } },
-            function (e) { return { e: (e.message || e) , status: "rejected" } });
+            function (e) { return { e: (e.message || e), status: "rejected" } });
     } else {
         return promise.then(function (v) { return { v: v, status: "resolved" } },
             function (e) { return { e: (e.message || e), status: "rejected" } });

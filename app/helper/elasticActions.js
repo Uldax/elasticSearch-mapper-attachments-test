@@ -24,26 +24,28 @@ var elasticActions = {
         var table_name = element.table_name,
             update_id = element.update_id,
             type_id = element.type_id,
-            op = element.op;
-        var action = new Action(update_id, type_id, op);
-        //table_name = "et";
+            op = element.op,
+        action = new Action(update_id, type_id, op);
+
         switch (table_name) {
             case 'pin':
                 //action.promise = actionPin(op, update_id)
                 return elasticActions.actionPin(op, update_id);
+
             case 'vote_pin':
                 return elasticActions.actionVotePin(op, update_id);
 
             case 'pinboard':
-                if (op != "I") {
-                    return elasticActions.actionPinboard(update_id);
-                }
-                break;
+                return elasticActions.actionPinboard(update_id);
+
             case 'version':
                 return elasticActions.actionDocument(op, update_id);
 
             case 'file_group':
                 return elasticActions.actionFile_Group(op, update_id);
+
+            case 'pinboard_group':
+                return elasticActions.actionPinboard_Group(op, update_id);
 
             default:
                 break;
@@ -60,9 +62,8 @@ var elasticActions = {
                     if (op == "U") {
                         return elasticService.updateDocument(row_to_update);
                     } else if (op == "I") {
-                        return documentModel.getGroupForFile(row_to_update.file_id).then(function (groupIds) {
-                            return elasticService.createDocument(row_to_update, groupIds);
-                        })
+                        return elasticService.createDocument(row_to_update);
+
                     } else {
                         throw new Error("Unknown op for document, op = " + op);
                     }
@@ -76,7 +77,7 @@ var elasticActions = {
         });
     },
 
-    //add to document the groups that have access to it
+    //Add to document the groups that have access to it
     actionFile_Group: function (op, log_data_id) {
         return new Promise(function (resolve, reject) {
             documentModel.getFile_GroupByLogData(log_data_id)
@@ -109,9 +110,7 @@ var elasticActions = {
                 .then(function (row_to_insert) {
                     // okay, I have both the "row_to_insert" and the "groupIds"
                     if (op == "I") {
-                        return pinModel.getGroupForPinboard(row_to_insert.pinboard_id).then(function (groupIds) {
-                            return elasticService.createPin(row_to_insert, groupIds);
-                        })
+                        return elasticService.createPin(row_to_insert);
                     }
                     else if (op == "U") {
                         return elasticService.updatePin(row_to_update);
@@ -127,7 +126,7 @@ var elasticActions = {
         });
     },
 
-    //store the vote associate to a pin
+    //Store the vote associate to a pin
     actionVotePin: function (op, log_data_id) {
         return new Promise(function (resolve, reject) {
             pinModel.getPinVote(log_data_id)
@@ -147,26 +146,26 @@ var elasticActions = {
         });
     },
 
-
-    //TODO 
-    actionPin_Group: function (op, file_id, group_id, type_id) {
-        var actionDefiner = new Promise(function (resolve, reject) {
-            var action;
-            //Get the ligne to update
-            if (op === "I") {
-                action = resolve(elasticService.addGroupToDocument(group_id, document_id));
-            } else if (op === "D" || op == "T") {
-                action = resolve(elasticService.removeGroupToDocument(group_id, document_id));
-            } else {
-                reject("unknow op");
-            }
+    //Add to pin the groups that have access to it
+    actionPinboard_Group: function (op, log_data_id) {
+        return new Promise(function (resolve, reject) {
+            pinModel.getGroupForPinboardByLogdata(log_data_id)
+                .then(function (row) {
+                    if (op === "I") {
+                        return (elasticService.addGroupToPinboard(row.group_id, row.pinboard_id));
+                    } else if (op === "D" || op == "T") {
+                        return (elasticService.removeGroupToPinboard(row.group_id, row.pinboard_id));
+                    } else {
+                        throw new Error("Unknow op");
+                    }
+                })
+                .then(function (status) {
+                    resolve(status);
+                })
+                .catch(function (err) {
+                    reject("in actionFile_Group " + (err.message || err));
+                })
         });
-
-        actionDefiner.then(function (action) {
-            action.then(function (message) {
-                db.none("DELETE FROM public.update WHERE update_id = $1 AND update_composite_id = $2 type_id = $3  ", file_id, group_id, type_id)
-            }).catch(utils.onError)
-        })
     },
 
     //TODO

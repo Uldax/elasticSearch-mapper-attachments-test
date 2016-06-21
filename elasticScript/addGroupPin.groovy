@@ -1,1 +1,0 @@
-ctx._source.pin_groups_ids+=new_group

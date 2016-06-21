@@ -305,7 +305,7 @@ DROP TRIGGER IF EXISTS pin_change_trigger ON pinboard.pin;
 DROP TRIGGER IF EXISTS layout_change_trigger ON pinboard.layout;
 DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin;
 DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;
-
+DROP TRIGGER IF EXISTS pinboard_group_change_trigger ON pinboard.pinboard_group;
 
 
 
@@ -345,6 +345,12 @@ EXECUTE PROCEDURE on_change();
 CREATE TRIGGER vote_change_trigger 
 AFTER INSERT OR UPDATE  
 ON pinboard.vote_pin
+FOR EACH ROW  
+EXECUTE PROCEDURE on_change();
+
+CREATE TRIGGER pinboard_group_change_trigger 
+AFTER INSERT OR DELETE  
+ON pinboard.pinboard_group
 FOR EACH ROW  
 EXECUTE PROCEDURE on_change();
 

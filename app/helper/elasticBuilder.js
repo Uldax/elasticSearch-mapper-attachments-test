@@ -143,9 +143,10 @@ var elasticBuilder = {
                     }
                 },
                 "script": {
-                    "file": "addGroupFile",
+                    "file": "addGroupUpdate",
                     "params": {
-                        "new_group": group_id
+                        "new_group": group_id,
+                        "fieldToUpdate": "document_groups_ids"
                     }
                 }
 
@@ -155,15 +156,16 @@ var elasticBuilder = {
 
         removeGroupToDocument: function (group_id, document_id) {
             var requestData = {
-                "script": {
-                    "file": "removeGroup",
-                    "params": {
-                        "new_group": group_id
-                    }
-                },
                 "query": {
                     "term": {
                         "document_id": document_id
+                    }
+                },
+                "script": {
+                    "file": "removeGroupUpdate",
+                    "params": {
+                        "new_group": group_id,
+                        "fieldToUpdate": "document_groups_ids"
                     }
                 }
             }
@@ -176,8 +178,44 @@ var elasticBuilder = {
                 "pin_id": row.pin_id,
                 "pin_content": row.pin_label,
                 "pinboard_label": row.pinboard_label,
-                "pin_groups_ids": groupIds,
+                "pin_groups_ids": [],
                 "pin_vote": 0
+            }
+            return requestData;
+        },
+
+        addGroupToPinboard: function (group_id,pinboard_id) {
+            var requestData = {
+                "query": {
+                    "term": {
+                        "pinboard_id": pinboard_id
+                    }
+                },
+                "script": {
+                    "file": "addGroupUpdate",
+                    "params": {
+                        "new_group": group_id,
+                        "fieldToUpdate": "pin_groups_ids"
+                    }
+                }
+            }
+            return requestData;
+        },
+
+        removeGroupToPinboard: function (group_id,pinboard_id) {
+            var requestData = {
+                "query": {
+                    "term": {
+                        "pinboard_id": pinboard_id
+                    }
+                },
+                "script": {
+                    "file": "removeGroupUpdate",
+                    "params": {
+                        "new_group": group_id,
+                        "fieldToUpdate": "pin_groups_ids"
+                    }
+                }
             }
             return requestData;
         },

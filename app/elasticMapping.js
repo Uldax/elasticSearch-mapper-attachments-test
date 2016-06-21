@@ -69,6 +69,10 @@ var mapping = {
                 "pinboard_label": {
                     "type": "string"
                 },
+                //For pin right
+                "pinboard_id" :{
+                    "type" :"long"
+                },
                 "pin_groups_ids": {
                     "type": "long"
                 }

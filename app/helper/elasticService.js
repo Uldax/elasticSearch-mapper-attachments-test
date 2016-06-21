@@ -22,7 +22,7 @@ var client = new elasticsearch.Client({
 
 var elasticService = {
     /*************** DOCUMENT  **************** */
-    createDocument: function (row, groupIds) {
+    createDocument: function (row) {
         //! fileSize > 104857600      
         return new Promise(function (resolve, reject) {
             var path = row.path;
@@ -32,7 +32,7 @@ var elasticService = {
                 log_data_id: row.log_data_id,
                 //TODO : name = file label not file version label
                 name: row.label,
-                groupIds: groupIds
+                groupIds: []
             }
             try {
                 var requestData = elasticBuilder.createDocument(path, data);
@@ -101,6 +101,10 @@ var elasticService = {
                         case 400:
                             reject("Bad request object");
                             break;
+                        
+                        //Todo : find
+                        case 500 :
+                            reject("Bad request object");
                         default:
                             reject(response.statusCode);
                             break;
@@ -125,12 +129,12 @@ var elasticService = {
         return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.updatePinBoard(group_id, document_id));
     },
 
-    addGroupToPin: function (group_id, pin_id) {
-        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.addGroupToPin(group_id, document_id));
+    addGroupToPinboard: function (group_id, pinboard_id) {
+        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.addGroupToPinboard(group_id, pinboard_id));
     },
 
-    removeGroupToPin: function (group_id, pin_id) {
-        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.removeGroupToPin(group_id, document_id));
+    removeGroupToPinboard: function (group_id, pinboard_id) {
+        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.removeGroupToPinboard(group_id, pinboard_id));
     },
 
     /*************** IMPORT  **************** */
@@ -153,13 +157,10 @@ var elasticService = {
     },
 
     /*************** PIN  **************** */
-    createPin: function (row, groupIds) {
+    createPin: function (row) {
         return new Promise(function (resolve, reject) {
-            if (!groupIds) {
-                groupIds = [];
-            }
             try {
-                var requestData = elasticBuilder.createPin(row, groupIds);
+                var requestData = elasticBuilder.createPin(row);
                 client.create({
                     index: indexName,
                     type: 'pin',
