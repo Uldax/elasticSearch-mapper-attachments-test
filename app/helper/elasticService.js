@@ -20,7 +20,6 @@ var client = new elasticsearch.Client({
     log: 'error'
 });
 
-
 var elasticService = {
     /*************** DOCUMENT  **************** */
     createDocument: function (row, groupIds) {
@@ -56,28 +55,12 @@ var elasticService = {
     //In update we don't reindex the content of file :
     //if the content change , there is a new version so it's insertDocument
     updateDocument: function (row) {
-        //Get info from db 
-        // format body
-        var versionID = row.document_id;
-        var fileName = row.document_name;
-        return new Promise(function (resolve, reject) {
-            //ReindexDocument         
-            // TODO : reidex only if path change  
-            var requestData = elasticBuilder.createDocument(fileName);
-            if (requestData) {
-                client.update({
-                    index: indexName,
-                    type: 'document',
-                    id: versionID,
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("Document with " + versionID + " updated");
-                }, function (err) {
-                    reject(err.message || err);
-                });
-            } else {
-                reject();
-            }
+        var requestData = elasticBuilder.updateDocumentVersion(row);
+        return client.update({
+            index: indexName,
+            type: 'document',
+            id: row.log_data_id,
+            body: requestData
         })
     },
 

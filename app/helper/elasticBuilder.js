@@ -1,76 +1,6 @@
 "use strict";
 //Class that build request to send to elastic search serveur
 
-/*
-POST /opus/_search
-{
-   "from": 0,
-   "size": 19,
-   "_source": {
-      "excludes": [
-         "attachment._content"
-      ]
-   },
-   "highlight": {
-      "fields": {
-         "attachment.content": {},
-         "label": {},
-         "pin" : {}
-      },
-      "number_of_fragments": 3
-   },
-   "query": {
-      "bool": {
-         "should": [
-          {
-            "match": {
-              "attachment.content": {
-                "query": "essai"
-              }
-            }     
-          },
-          {
-            "match": {
-              "label": {
-                "query": "p"
-              }
-            }     
-          }
-        ],
-         "filter": {
-            "bool": {
-               "should": [
-                  {
-                     "terms": {
-                        "_id": [
-                           "1029"
-                        ]
-                     }
-                  },
-                  {
-                     "bool": {
-                        "must": [
-                           {
-                              "terms": {
-                                 "_d": [
-                                    "1029",
-                                    "1030"
-                                 ]
-                              }
-                           }
-                        ]
-                     }
-                  }
-               ]
-            }
-         },
-          "minimum_should_match" : 1
-      }
-   }
-}
-
-*/
-
 //TODO : add date , exact , type  
 //Param send to search endPoint
 const ALL_RESULTS = 0;
@@ -171,28 +101,42 @@ var elasticBuilder = {
         },
 
         createDocument: function (path, data) {
-                var base64file = utils.base64_encode("../" + path);
-                var fileSize = Buffer.byteLength(base64file);
-                //id is set in url sent to elastic : http POST elastic/index/type/id
-                var requestData = {
+            var base64file = utils.base64_encode("../" + path);
+            var fileSize = Buffer.byteLength(base64file);
+            //id is set in url sent to elastic : http POST elastic/index/type/id
+            var requestData = {
+                "attachment": {
+                    "_content": base64file,
+                    "_name": data.name,
+                    "_content_length": fileSize
+                },
+                "document_type": utils.getType(path),
+                "insertDate": utils.getTodayDateFormat(),
+                "document_id": data.document_id,
+                "version_id": data.version_id,
+                //if not set , add values instead of add to array
+                "document_groups_ids": data.groupIds
+            }
+            return requestData;
+        },
+
+        updateDocumentVersion: function (row) {
+            //id is set in url sent to elastic : http POST elastic/index/type/id
+            var requestData = {
+                "doc": {
                     "attachment": {
-                        "_content": base64file,
-                        "_name": data.name,
-                        "_content_length": fileSize
+                        "_name": row.label,
                     },
-                    "document_type": utils.getType(path),
                     "insertDate": utils.getTodayDateFormat(),
-                    "document_id": data.document_id,
-                    "version_id": data.version_id,
-                    //if not set , add values instead of add to array
-                    "document_groups_ids": data.groupIds
                 }
-                return requestData;           
+            }
+            return requestData;
+
         },
 
         //Files are in config/script under elasticSearch folder
         addGroupToFile: function (group_id, document_id) {
-            var requestData = {           
+            var requestData = {
                 "query": {
                     "term": {
                         "document_id": document_id
@@ -208,8 +152,8 @@ var elasticBuilder = {
             }
             return requestData;
         },
-      
-        removeGroupToDocument : function (group_id, document_id) {
+
+        removeGroupToDocument: function (group_id, document_id) {
             var requestData = {
                 "script": {
                     "file": "removeGroup",
@@ -222,19 +166,18 @@ var elasticBuilder = {
                         "document_id": document_id
                     }
                 }
-
             }
             return requestData;
         },
 
-        createPin: function (row,groupIds) {
+        createPin: function (row, groupIds) {
             var requestData = {
                 "layou_label": row.label_layout,
                 "pin_id": row.pin_id,
-                "pin_content"  : row.pin_label,
-                "pinboard_label" : row.pinboard_label,
-                "pin_groups_ids" : groupIds,
-                "pin_vote" : 0
+                "pin_content": row.pin_label,
+                "pinboard_label": row.pinboard_label,
+                "pin_groups_ids": groupIds,
+                "pin_vote": 0
             }
             return requestData;
         },
