@@ -41,6 +41,9 @@ router.post('/search', function (req, res, next) {
     var dbDone = false;
     var filterCall = false;
     var userAuth = req.body.userAuth || 0;
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
     // if (userAuth === 0 || querryString === "") {
     //     res.send({
     //         error: "Missing base parameters"
