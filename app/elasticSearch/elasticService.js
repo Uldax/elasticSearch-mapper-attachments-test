@@ -31,7 +31,8 @@ var elasticService = {
                 log_data_id: row.log_data_id,
                 //TODO : name = file label not file version label
                 name: row.label,
-                groupIds: []
+                groupIds: [],
+                user_id : row.user_id
             }
             try {
                 var requestData = elasticServiceBuilder.createDocument(path, data);

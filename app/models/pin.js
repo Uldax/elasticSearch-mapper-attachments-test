@@ -9,7 +9,7 @@ var pinModel = {
     getPinInfoById: function (log_data_id) {
         //TODO create view
         //can't have pin vote when pin create so remove from this request
-        return db.one("SELECT pin.pin_id,pin.log_data_id,pinboard.pinboard.pinboard_id,layout.layout_id, " +
+        return db.one("SELECT pin.pin_id,pin.log_data_id,pinboard.pinboard.pinboard_id,layout.layout_id,pin.user_id, " +
             "pinboard.layout.label AS label_layout, " +
             "pinboard.pinboard.label AS pinboard_label, " +
             "pinboard.pin.label AS pin_label " +

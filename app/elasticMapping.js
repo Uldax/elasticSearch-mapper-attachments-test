@@ -45,6 +45,10 @@ var mapping = {
                 },
                 "insert_by": {
                     "type": "long"
+                },
+                //If document doesn't have group
+                "created_by" : {
+                    "type": "long"
                 }
             }
         }
@@ -81,6 +85,10 @@ var mapping = {
                 "layout_id": {
                     "type": "long"
                 },
+                 //If pin doesn't have group
+                "created_by" : {
+                    "type": "long"
+                }
 
             }
         }

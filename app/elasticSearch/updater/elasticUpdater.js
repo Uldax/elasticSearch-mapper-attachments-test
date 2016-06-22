@@ -60,7 +60,6 @@ var elasticUpdater = {
                             return Promise.resolve();
                         }
                     })
-
                     .then(function (lastResult) {
                         //In case of no action
                         if (lastResult && lastResult.state == "rejected") {

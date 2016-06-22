@@ -22,7 +22,8 @@ var elasticIndexBuilder = {
             "document_id": data.document_id,
             "version_id": data.version_id,
             //if not set , add values instead of add to array
-            "document_groups_ids": data.groupIds
+            "document_groups_ids": data.groupIds,
+            "created_by": data.user_id
         }
         return requestData;
     },
@@ -89,7 +90,9 @@ var elasticIndexBuilder = {
             "layout_id": row.layout_id,
             "pin_id": row.pin_id,
             "pinboard_id": row.pinboard_id,
-            "pin_groups_ids": []
+            "pin_groups_ids": [],
+            "created_by": row.user_id
+
 
         }
         return requestData;

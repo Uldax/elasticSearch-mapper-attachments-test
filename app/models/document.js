@@ -19,7 +19,9 @@ var documentModel = {
     },
 
     getVersionById: function (log_data_id) {
-        return db.one('SELECT version_id,version.label AS labelVersion, file.label,version.log_data_id,version.valid,path,version.file_id FROM file.version INNER JOIN file.file ON file.version.file_id = file.file.file_id WHERE version.log_data_id = $1', log_data_id);
+        return db.one("SELECT version_id,version.label AS labelVersion, file.label,version.log_data_id,version.valid,path,version.file_id, version.user_id "+
+        "FROM file.version "+
+        "INNER JOIN file.file ON file.version.file_id = file.file.file_id WHERE version.log_data_id = $1", log_data_id);
     },
 
     //action file
