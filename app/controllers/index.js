@@ -1,20 +1,10 @@
 var express = require('express');
 var request = require("request");
-var elasticService = require("./../helper/elasticService");
+var elasticService = require("./../elasticSearch/elasticService");
 var router = express.Router();
-var pg = require('pg');
-var connectionString = process.env.DATABASE_URL || 'postgres://superopus:superopus@localhost:5432/documentBase';
-var elasticSearchPort = "9200";
-var protocol = "http"
-var indexName = "opus/document"
-var serverIp = "localhost";
-var baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
-var elastic = require('../helper/elasticBuilder.js');
-
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-    console.log('call to home');
     pg.connect(connectionString, function (err, client, done) {
         if (err) {
             return console.error('error fetching client from pool', err);
@@ -105,15 +95,5 @@ router.post('/search', function (req, res, next) {
     }
 
 });
-
-function in_array(array, document_name) {
-    for (var i = 0; i < array.length; i++) {
-        if (array[i].document_name === document_name) {
-            return true;
-        }
-
-    }
-    return false;
-}
 
 module.exports = router;

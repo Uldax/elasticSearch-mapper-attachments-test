@@ -308,7 +308,6 @@ DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;
 DROP TRIGGER IF EXISTS pinboard_group_change_trigger ON pinboard.pinboard_group;
 
 
-
 CREATE TRIGGER version_change_trigger 
 AFTER INSERT OR UPDATE  
 ON file.version  
@@ -353,5 +352,4 @@ AFTER INSERT OR DELETE
 ON pinboard.pinboard_group
 FOR EACH ROW  
 EXECUTE PROCEDURE on_change();
-
 

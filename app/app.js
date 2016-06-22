@@ -4,8 +4,8 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
 var routes = require('./controllers/index');
-var elasticUpdater = require('./helper/elasticUpdater');
-var elasticImporter = require('./helper/elasticImporter');
+var elasticUpdater = require('./elasticSearch/updater/elasticUpdater');
+var elasticImporter = require('./elasticSearch/elasticImporter');
 var app = express();
 
 // view engine setup

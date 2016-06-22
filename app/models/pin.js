@@ -9,7 +9,7 @@ var pinModel = {
     getPinInfoById: function (log_data_id) {
         //TODO create view
         //can't have pin vote when pin create so remove from this request
-        return db.one("SELECT pin.pin_id,pin.log_data_id,pinboard.pinboard.pinboard_id, " +
+        return db.one("SELECT pin.pin_id,pin.log_data_id,pinboard.pinboard.pinboard_id,layout.layout_id, " +
             "pinboard.layout.label AS label_layout, " +
             "pinboard.pinboard.label AS pinboard_label, " +
             "pinboard.pin.label AS pin_label " +
@@ -25,6 +25,20 @@ var pinModel = {
             "FROM pinboard.vote_pin " +
             "INNER JOIN pinboard.pin ON pinboard.vote_pin.pin_id = pinboard.pin.pin_id " +
             "WHERE pinboard.vote_pin.log_data_id = $1 ", log_data_id);
+    },
+
+    //for pinboard update
+    getPinboardByLogdata : function(log_data_id) {
+         return db.one("SELECT label,pinboard_id " +
+            "FROM pinboard.pinboard " +
+            "WHERE pinboard.pinboard.log_data_id = $1 ", log_data_id);
+    },
+
+    //for layout update
+    getLayoutByLogdata : function(log_data_id) {
+         return db.one("SELECT label,layout_id " +
+            "FROM pinboard.layout " +
+            "WHERE pinboard.layout.log_data_id = $1 ", log_data_id);
     },
     
     getGroupForPinboardByLogdata: function (log_data_id) {

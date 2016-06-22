@@ -15,8 +15,8 @@ var elasticSearchPort = conf.elastic.port,
     folderName = "indexedDocuments",
     baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort;
 
-var updater = require('../helper/elasticUpdater');
-var service = require('../helper/elasticService');
+var updater = require('../elasticSearch/updater/elasticUpdater');
+var service = require('../elasticSearch/elasticService');
 var update = require('../models/update');
 var testModel = require('../models/test');
 var fileLabel = "superTest";

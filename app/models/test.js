@@ -24,7 +24,7 @@ var testModel = {
                     t.none("DROP TRIGGER IF EXISTS layout_change_trigger ON pinboard.layout"),
                     t.none("DROP TRIGGER IF EXISTS vote_change_trigger ON pinboard.vote_pin"),
                     t.none("DROP TRIGGER IF EXISTS document_group_change_trigger ON file.file_group;"),
-                    t.none("DROP TRIGGER IF EXISTS pinboard_group_change_trigger ON pinboard.pinboard_group;")                   
+                    t.none("DROP TRIGGER IF EXISTS pinboard_group_change_trigger ON pinboard.pinboard_group;"),
                 ]);
             })
                 .then(function (data) {
@@ -80,16 +80,15 @@ var testModel = {
                         "FOR EACH ROW " +
                         "EXECUTE PROCEDURE on_change()"),
 
-
                     t.none("CREATE TRIGGER pinboard_group_change_trigger " +
                         "AFTER INSERT OR DELETE " +
                         "ON pinboard.pinboard_group " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()")
+                        "EXECUTE PROCEDURE on_change()"),
                 ]);
             })
                 .then(function (data) {
-                    resolve('trigger remove');
+                    resolve('trigger removed');
                 })
                 .catch(function (error) {
                     reject(error.message || error);

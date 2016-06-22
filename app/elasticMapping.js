@@ -31,8 +31,8 @@ var mapping = {
                     "type": "date",
                     "format": "dd/MM/yyyy"
                 },
-                "file_label" : {
-                    "type" : "string"
+                "file_label": {
+                    "type": "string"
                 },
                 "document_id": {
                     "type": "long"
@@ -43,8 +43,8 @@ var mapping = {
                 "document_groups_ids": {
                     "type": "long"
                 },
-                "insert_by" :{
-                    "type" : "long"
+                "insert_by": {
+                    "type": "long"
                 }
             }
         }
@@ -56,8 +56,8 @@ var mapping = {
                 "layou_label": {
                     "type": "string"
                 },
-                "pin_id": {
-                    "type": "long"
+                "pinboard_label": {
+                    "type": "string"
                 },
                 "pin_vote": {
                     "type": "string"
@@ -66,16 +66,22 @@ var mapping = {
                 "pin_content": {
                     "type": "string"
                 },
-                "pinboard_label": {
-                    "type": "string"
+
+                "pin_id": {
+                    "type": "long"
                 },
                 //For pin right
-                "pinboard_id" :{
-                    "type" :"long"
+                "pinboard_id": {
+                    "type": "long"
                 },
                 "pin_groups_ids": {
                     "type": "long"
-                }
+                },
+                //For update layout
+                "layout_id": {
+                    "type": "long"
+                },
+
             }
         }
     }

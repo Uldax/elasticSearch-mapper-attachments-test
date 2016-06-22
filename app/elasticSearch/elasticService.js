@@ -2,8 +2,7 @@
 //Classe that consume builder to perform request to elastic serveur
 //All methode return a Promise with success message or error log from elasticServer
 var request = require("request"),
-    utils = require("./utils"),
-    elasticBuilder = require("./elasticBuilder"),
+    elasticServiceBuilder = require("./builder/indexBuilder"),
     conf = require("../config"),
     elasticsearch = require('elasticsearch'),
     mapping = require('../elasticMapping');
@@ -35,7 +34,7 @@ var elasticService = {
                 groupIds: []
             }
             try {
-                var requestData = elasticBuilder.createDocument(path, data);
+                var requestData = elasticServiceBuilder.createDocument(path, data);
                 client.create({
                     id: data.log_data_id,
                     index: indexName,
@@ -55,7 +54,7 @@ var elasticService = {
     //In update we don't reindex the content of file :
     //if the content change , there is a new version so it's insertDocument
     updateDocument: function (row) {
-        var requestData = elasticBuilder.updateDocumentVersion(row);
+        var requestData = elasticServiceBuilder.updateDocumentVersion(row);
         return client.update({
             index: indexName,
             type: 'document',
@@ -86,12 +85,17 @@ var elasticService = {
                         //EveryThing works
                         case 200:
                             //TODO handle 
-
-                            if ((typeof body != undefined) &&
-                                (body.total == body.updated) && (body.total > 0)) {
-                                resolve(body.total + " document updated");
-                            } else{
+                            if ( (typeof body != undefined) && body.total > 0)  {
+                                if(body.total == body.updated)  {
+                                    resolve(body.total + " document updated");
+                                } else if (body.total == body.noops) {
+                                    resolve(body.total + " update ignored");
+                                }
+                            }
+                                    
+                            else {
                                 //TODO handle other case
+                                console.log(body);
                                 reject(body)
                             }
                             break;
@@ -106,9 +110,9 @@ var elasticService = {
                         case 400:
                             reject("Bad request object");
                             break;
-                        
+
                         //Todo : find
-                        case 500 :
+                        case 500:
                             reject("Bad request object");
                         default:
                             console.log("default");
@@ -124,29 +128,37 @@ var elasticService = {
     },
 
     addGroupToDocument: function (group_id, document_id) {
-        return elasticService.sendUpdateByQuery("/opus/document/", elasticBuilder.addGroupToFile(group_id, document_id));
+        return this.sendUpdateByQuery("/opus/document/", elasticServiceBuilder.addGroupToFile(group_id, document_id));
     },
 
     removeGroupToDocument: function (group_id, document_id) {
-        return elasticService.sendUpdateByQuery("/opus/document/", elasticBuilder.removeGroupToDocument(group_id, document_id));
+        return this.sendUpdateByQuery("/opus/document/", elasticServiceBuilder.removeGroupToDocument(group_id, document_id));
     },
 
     updatePinBoard: function (id) {
-        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.updatePinBoard(group_id, document_id));
+        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.updatePinBoard(group_id, document_id));
     },
 
     addGroupToPinboard: function (group_id, pinboard_id) {
-        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.addGroupToPinboard(group_id, pinboard_id));
+        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.addGroupToPinboard(group_id, pinboard_id));
     },
 
     removeGroupToPinboard: function (group_id, pinboard_id) {
-        return elasticService.sendUpdateByQuery("/opus/pin/", elasticBuilder.removeGroupToPinboard(group_id, pinboard_id));
+        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.removeGroupToPinboard(group_id, pinboard_id));
+    },
+
+    updatePinWithPinboard: function (pinboard_label, pinboard_id) {
+        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.updatePinWithPinboard(pinboard_label, pinboard_id));
+    },
+
+    updatePinWithLayout: function (layout_label, layout_id) {
+        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.updatePinWithLayout(layout_label, layout_id));
     },
 
     /*************** IMPORT  **************** */
     bulkPin: function (rows) {
         return new Promise(function (resolve, reject) {
-            var body_json = elasticBuilder.bulkPin(rows);
+            var body_json = elasticServiceBuilder.bulkPin(rows);
             if (body_json) {
                 client.bulk({
                     body: body_json
@@ -166,7 +178,7 @@ var elasticService = {
     createPin: function (row) {
         return new Promise(function (resolve, reject) {
             try {
-                var requestData = elasticBuilder.createPin(row);
+                var requestData = elasticServiceBuilder.createPin(row);
                 client.create({
                     index: indexName,
                     type: 'pin',
@@ -208,7 +220,7 @@ var elasticService = {
     search: function (buildOption) {
         //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
         return new Promise(function (resolve, reject) {
-            var objectRequest = elasticBuilder.search(buildOption);
+            var objectRequest = elasticServiceBuilder.search(buildOption);
             client.search({
                 index: indexName,
                 body: objectRequest

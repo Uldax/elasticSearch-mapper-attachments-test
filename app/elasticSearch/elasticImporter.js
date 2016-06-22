@@ -5,11 +5,10 @@
 //Current data handle : file / version / pinboard / layout / pin
 
 
-var utils = require("./utils.js"),
-    elasticService = require('./elasticService.js'),
+var elasticService = require('./elasticService.js'),
     documentModel = require('../models/document.js'),
     pinModel = require('../models/pin.js'),
-    utils = require('./utils.js');
+    elasticUpdater = require('./updater/elasticUpdater.js');
 
 var elasticImporter = {
 
@@ -69,7 +68,7 @@ function importFiles() {
                     for (var row = 0; row < rows.length; row++) {
                         actionPromises.push(elasticService.createDocument(rows[row]));
                     }
-                    Promise.all(actionPromises.map(utils.reflect))
+                    Promise.all(actionPromises.map(elasticUpdater.reflect))
                         .then(function (results) {
                             console.log(results);
                             var rejectResult = results.filter(x => x.status === "rejected");

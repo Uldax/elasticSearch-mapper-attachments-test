@@ -1,9 +1,9 @@
 "use strict";
 //Read scheduled update from database and execute thm all
-var updateModel = require('../models/update.js');
-var elasticService = require("./elasticService");
-var elasticActions = require("./elasticActions");
-var utils = require("./utils");
+var updateModel = require('../../models/update.js');
+var elasticService = require("../elasticService");
+var elasticActions = require("./actionUpdate");
+var utils = require("../../helper/utils");
 
 
 var elasticUpdater = {

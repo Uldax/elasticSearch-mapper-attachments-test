@@ -1,9 +1,9 @@
 "use strict";
 //Patern : get the information to index based on log_data_id insert in update table
 //then resolve the service call associate to the operation
-var documentModel = require('../models/document.js');
-var pinModel = require('../models/pin.js');
-var elasticService = require("./elasticService");
+var documentModel = require('../../models/document.js');
+var pinModel = require('../../models/pin.js');
+var elasticService = require("../elasticService");
 
 var Action = class Action {
     constructor(update_id, type_id, op) {
@@ -22,30 +22,33 @@ var elasticActions = {
     createActionUpdate: function (element) {
 
         var table_name = element.table_name,
-            update_id = element.update_id,
+            log_data_id = element.update_id,
             type_id = element.type_id,
             op = element.op,
-        action = new Action(update_id, type_id, op);
+            action = new Action(log_data_id, type_id, op);
 
         switch (table_name) {
             case 'pin':
-                //action.promise = actionPin(op, update_id)
-                return elasticActions.actionPin(op, update_id);
+                //action.promise = actionPin(op, log_data_id)
+                return elasticActions.actionPin(op, log_data_id);
 
             case 'vote_pin':
-                return elasticActions.actionVotePin(op, update_id);
-
-            case 'pinboard':
-                return elasticActions.actionPinboard(update_id);
+                return elasticActions.actionVotePin(op, log_data_id);
 
             case 'version':
-                return elasticActions.actionDocument(op, update_id);
+                return elasticActions.actionDocument(op, log_data_id);
 
             case 'file_group':
-                return elasticActions.actionFile_Group(op, update_id);
+                return elasticActions.actionFile_Group(op, log_data_id);
 
             case 'pinboard_group':
-                return elasticActions.actionPinboard_Group(op, update_id);
+                return elasticActions.actionPinboard_Group(op, log_data_id);
+
+            case 'layout':
+                return elasticActions.actionLayout(op, log_data_id);
+
+            case 'pinboard':
+                return elasticActions.actionPinboard(op, log_data_id);
 
             default:
                 break;
@@ -108,7 +111,6 @@ var elasticActions = {
             //Get the ligne to update
             pinModel.getPinInfoById(log_data_id)
                 .then(function (row_to_insert) {
-                    // okay, I have both the "row_to_insert" and the "groupIds"
                     if (op == "I") {
                         return elasticService.createPin(row_to_insert);
                     }
@@ -168,44 +170,45 @@ var elasticActions = {
         });
     },
 
-    //TODO
-    actionPinboard: function (op, update_id, type_id) {
-        var actionDefiner = new Promise(function (resolve, reject) {
-            var action;
+    //Update pin if pinboard change
+    actionPinboard: function (op, log_data_id) {
+        return new Promise(function (resolve, reject) {
             //Get the ligne to update
-            if (op === "I") {
-                //db request
-                pinModel.getPinInfo(update_id).then(function (row_to_insert) {
-                    action = resolve(elasticService.createPin(row_to_insert));
-                })
-
-            } else if (op === "D" || op == "T" || op === "U") {
-                pinModel.getPinByID(update_id).then(function (row_to_update) {
+            pinModel.getPinboardByLogdata(log_data_id)
+                .then(function (row) {
                     if (op == "U") {
-                        action = resolve(elasticService.updatePin(row_to_update));
+                        console.log("pinboard");
+                        return elasticService.updatePinWithPinboard(row.label, row.pinboard_id);
                     } else {
-                        action = resolve(elasticService.deletePin(row_to_update.pin_id));
+                        throw new Error("Unknow op for pinboard");
                     }
+                }).then(function (status) {
+                    resolve(status);
                 })
-            } else {
-                reject("unknow op");
-            }
+                .catch(function (err) {
+                    reject("in actionPinboard " + (err.message || err));
+                })
         });
-
-        actionDefiner.then(function (action) {
-            action.then(function (message) {
-                return db.none("DELETE FROM public.update WHERE update_id = $1 AND type_id = $2  ", row_to_update.version_id, type_id)
-            }).catch(function (err) {
-                console.error(err.message || err);
-                //If delete fail undo index ?
-            })
-
-        })
     },
 
-    //TODO 
-    actionLayout: function () {
-
+    //Update pin if layout change
+    actionLayout: function (op, log_data_id) {
+        return new Promise(function (resolve, reject) {
+            //Get the ligne to update
+            pinModel.getLayoutByLogdata(log_data_id)
+                .then(function (row) {
+                    if (op == "U") {
+                        return elasticService.updatePinWithLayout(row.label, row.layout_id);
+                    } else {
+                        throw new Error("Unknow op for layout");
+                    }
+                }).then(function (status) {
+                    resolve(status);
+                })
+                .catch(function (err) {
+                    reject("in actionLayout " + (err.message || err));
+                })
+        });
     }
 
 }

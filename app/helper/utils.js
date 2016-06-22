@@ -77,7 +77,17 @@ var utils = {
         console.log("throwing error");
         //return reject(err.message || err);
         throw new Error(err.message || err);
+    },
+
+    document_in_array: function (array, document_name) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i].document_name === document_name) {
+                return true;
+            }
+        }
+        return false;
     }
+
 }
 
 
