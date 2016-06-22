@@ -108,24 +108,29 @@ var elasticActions = {
     //Index or update pin with pinboard and layout metadata
     actionPin: function (op, log_data_id) {
         return new Promise(function (resolve, reject) {
-            //Get the ligne to update
-            pinModel.getPinInfoById(log_data_id)
-                .then(function (row_to_insert) {
-                    if (op == "I") {
-                        return elasticService.createPin(row_to_insert);
-                    }
-                    else if (op == "U") {
+            //Get the ligne to update  
+            Promise.resolve().then(function () {
+                if (op == "I") {
+                    pinModel.getPinInfoById(log_data_id)
+                        .then(function (row_to_insert) {
+                            return elasticService.createPin(row_to_insert);
+                        })
+                }
+                else if (op == "U") {
+                    pinModel.getPinUpdateInfoById(log_data_id).then(function (row_to_update) {
                         return elasticService.updatePin(row_to_update);
-                    } else {
-                        throw new Error("Unknow op");
-                    }
-                }).then(function (status) {
+                    })
+                } else {
+                    throw new Error("Unknow op");
+                }
+            })
+                .then(function (status) {
                     resolve(status);
                 })
                 .catch(function (err) {
                     reject("in actionPin " + (err.message || err));
                 })
-        });
+        })
     },
 
     //Store the vote associate to a pin

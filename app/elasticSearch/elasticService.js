@@ -196,6 +196,29 @@ var elasticService = {
 
         });
     },
+
+
+     updatePin: function (row) {
+        return new Promise(function (resolve, reject) {
+            try {
+                var requestData = elasticServiceBuilder.updatePin(row);
+                client.update({
+                    index: indexName,
+                    type: 'pin',
+                    id: row.log_data_id,
+                    body: requestData
+                }).then(function (resp) {
+                    resolve("PIN id " + row.pin_id + " updated");
+                }, function (err) {
+                    reject("in create pin" + (err.message || err));
+                });
+            } catch (error) {
+                reject(error.message || error);
+            }
+
+        });
+    },
+
     //pin_log_data_id is the id of a pin in elastic index
     //todo upsert
     sendUpdatePin: function (pin_log_data_id, requestData) {

@@ -4,7 +4,8 @@ var mapping = {
             "properties": {
                 "attachment": {
                     "type": "attachment",
-                    //Add index -1 pour tout indexer
+                    //Index all content
+                     "_indexed_chars" : -1,
                     "fields": {
                         "content": {
                             "type": "string",

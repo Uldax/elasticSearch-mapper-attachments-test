@@ -52,19 +52,17 @@ BEGIN
     ELSE 
         up_id := NEW.log_data_id;
     END IF;
-    -- Check if there is already an update or insert 
-    IF EXISTS (SELECT public.update.op FROM public.update
+
+    -- if ! exist (id,type,'I') alors insert
+    -- Insert I or U, not both
+    -- Insert just one U for every update
+    IF (NOT EXISTS (SELECT 1 FROM public.update
         JOIN content.type ON type.type_id = public.update.type_id 
-        WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME ) 
+        WHERE update_id = up_id AND content.type.table_name = TG_TABLE_NAME AND op = 'I' ))
         THEN
-        UPDATE public.update SET op=opcode, updated=now() WHERE update_id=up_id;
-    ELSE
-        -- test here ?
-        -- type_id because couple update_id and type_id is unique
         SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
         INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
     END IF;
-        
     RETURN NULL;
 END;
 

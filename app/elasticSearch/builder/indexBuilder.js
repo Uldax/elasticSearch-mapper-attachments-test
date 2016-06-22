@@ -98,6 +98,17 @@ var elasticIndexBuilder = {
         return requestData;
     },
 
+    updatePin: function (row, groupIds) {
+        var requestData =
+            {
+                doc: {
+                    "pin_content": row.label
+                }
+            }
+
+        return requestData;
+    },
+
     addGroupToPinboard: function (group_id, pinboard_id) {
         var requestData = {
             "query": {
