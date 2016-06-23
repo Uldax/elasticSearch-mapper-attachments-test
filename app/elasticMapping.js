@@ -41,10 +41,7 @@ var mapping = {
                 "version_id": {
                     "type": "long"
                 },
-                "document_groups_ids": {
-                    "type": "long"
-                },
-                "insert_by": {
+                "groups_ids": {
                     "type": "long"
                 },
                 //If document doesn't have group
@@ -58,7 +55,7 @@ var mapping = {
     pinMapping: {
         "pin": {
             "properties": {
-                "layou_label": {
+                "layout_label": {
                     "type": "string"
                 },
                 "pinboard_label": {
@@ -79,7 +76,7 @@ var mapping = {
                 "pinboard_id": {
                     "type": "long"
                 },
-                "pin_groups_ids": {
+                "groups_ids": {
                     "type": "long"
                 },
                 //For update layout

@@ -1,25 +1,31 @@
+"use strict";
 var express = require('express');
 var request = require("request");
 var elasticService = require("./../elasticSearch/elasticService");
+var user = require("./../models/user");
 var router = express.Router();
+
+
+var SearchBuilder =  require("./../elasticSearch/builder/searchBuilder");
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-    pg.connect(connectionString, function (err, client, done) {
-        if (err) {
-            return console.error('error fetching client from pool', err);
-        }
-        client.query("SELECT * FROM public.group", function (err, result) {
-            if (!err) {
-                done();
-                res.render('index', { roles: result.rows });
-            } else {
-                console.log(err);
-                //call `done()` to release the client back to the pool
-                done();
-            }
-        });
-    });
+    // pg.connect(connectionString, function (err, client, done) {
+    //     if (err) {
+    //         return console.error('error fetching client from pool', err);
+    //     }
+    //     client.query("SELECT * FROM public.group", function (err, result) {
+    //         if (!err) {
+    //             done();
+    //             res.render('index', { roles: result.rows });
+    //         } else {
+    //             console.log(err);
+    //             //call `done()` to release the client back to the pool
+    //             done();
+    //         }
+    //     });
+    // });
+    res.render('index', { roles: [] });
 
 });
 
@@ -95,5 +101,27 @@ router.post('/search', function (req, res, next) {
     }
 
 });
+
+router.post('/searchTest', function (req, res, next) {
+    var querryString = req.body.requestString || "";
+    var userAuth = req.body.userAuth || 1;
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+
+    //Get group from user
+    user.getGroupsForUser(userAuth)
+        .then(function (row) {
+            const sb = new SearchBuilder(req.body,row.array,userAuth);
+            return elasticService.search(sb.search);       
+        })
+        .then(function(results){
+             res.send(results);
+        })
+        .catch(function (err) {
+            res.send(err.message || err);
+        })
+});
+
 
 module.exports = router;

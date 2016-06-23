@@ -22,7 +22,7 @@ var elasticIndexBuilder = {
             "document_id": data.document_id,
             "version_id": data.version_id,
             //if not set , add values instead of add to array
-            "document_groups_ids": data.groupIds,
+            "groups_ids": [],
             "created_by": data.user_id
         }
         return requestData;
@@ -54,7 +54,7 @@ var elasticIndexBuilder = {
                 "file": "addGroupUpdate",
                 "params": {
                     "new_group": group_id,
-                    "fieldToUpdate": "document_groups_ids"
+                    "fieldToUpdate": "groups_ids"
                 }
             }
 
@@ -73,7 +73,7 @@ var elasticIndexBuilder = {
                 "file": "removeGroupUpdate",
                 "params": {
                     "new_group": group_id,
-                    "fieldToUpdate": "document_groups_ids"
+                    "fieldToUpdate": "groups_ids"
                 }
             }
         }
@@ -82,7 +82,7 @@ var elasticIndexBuilder = {
 
     createPin: function (row, groupIds) {
         var requestData = {
-            "layou_label": row.label_layout,
+            "layout_label": row.label_layout,
             "pin_content": row.pin_label,
             "pinboard_label": row.pinboard_label,
             "pin_vote": 0,
@@ -90,7 +90,7 @@ var elasticIndexBuilder = {
             "layout_id": row.layout_id,
             "pin_id": row.pin_id,
             "pinboard_id": row.pinboard_id,
-            "pin_groups_ids": [],
+            "groups_ids": [],
             "created_by": row.user_id
 
 
@@ -120,7 +120,7 @@ var elasticIndexBuilder = {
                 "file": "addGroupUpdate",
                 "params": {
                     "new_group": group_id,
-                    "fieldToUpdate": "pin_groups_ids"
+                    "fieldToUpdate": "groups_ids"
                 }
             }
         }
@@ -138,7 +138,7 @@ var elasticIndexBuilder = {
                 "file": "removeGroupUpdate",
                 "params": {
                     "new_group": group_id,
-                    "fieldToUpdate": "pin_groups_ids"
+                    "fieldToUpdate": "groups_ids"
                 }
             }
         }

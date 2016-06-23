@@ -27,10 +27,8 @@ const DATE_BEGIN = "begin";
 const DATE_END = "end";
 
 
-var ejs = require('../../helper/elastic'),
-    utils = require("../../helper/utils"),
-    conf = require("../../config"),
-    indexName = conf.elastic.mainIndex;
+var ejs = require('../../helper/elastic');
+
 
 
 /*
@@ -47,7 +45,79 @@ Param{
 }
 */
 
+class SearchBuilder {
+    constructor(requestParam, group_id, user_id) {
+        this.requestParam = requestParam;
+        this.group_id = group_id;
+        this.user_id = user_id;
+        console.log(requestParam);
+    }
+
+    userFilter() {
+        var ejstest = ejs.BoolQuery()
+            .should([
+                ejs.TermsQuery('groups_ids', this.group_id),
+                ejs.TermsQuery('created_by', this.user_id)
+            ]);
+        return ejstest;
+    }
+
+    filter() {
+        return ejs.ConstantScoreQuery()
+            .filter(
+            ejs.BoolQuery().must(
+                this.userFilter()
+            ))
+
+    }
+
+    query() {
+        return ejs
+            .BoolQuery()
+            .should([
+                ejs.MatchQuery('attachment.content', this.requestParam[REQUEST_STRING_FIELD]),
+                ejs.MatchQuery('pinboard_label', this.requestParam[REQUEST_STRING_FIELD]),
+                ejs.MatchQuery('pin_content', this.requestParam[REQUEST_STRING_FIELD])
+            ])
+    }
+
+    //Set field to retrive and highlight
+    highlight() {
+        return ejs
+            .Highlight([
+                "attachment.content",
+                "pinboard_label",
+                "layout_label",
+                "pin_content",
+                "attachment.name"
+            ])
+            .numberOfFragments(3)
+    }
+
+    get search() {
+        return ejs.Request()
+            //exclude sources
+            .source(["pinboard_label",
+                "created_by",
+                "layout_label",
+                "pin_content",
+                "pin_vote",
+                "attachment.title",
+                "document_type",
+                "file_label"])
+            .highlight(this.highlight())
+            .query(
+            this.query()
+            );
+    }
+
+}
+
 var elasticSearchBuilder = {
+
+
+
+
     bodySearch: {},
     //List of console log
     consoleStatus: {},
@@ -56,6 +126,9 @@ var elasticSearchBuilder = {
     querrySet: false,
 
     publicObject: {
+        //private function
+        //Can only retrieved document in user group or created by
+
         //parse buildParam  
         search: function (reqBody) {
             elasticSearchBuilder.buildParam = reqBody;
@@ -98,22 +171,9 @@ var elasticSearchBuilder = {
             } else {
                 throw Error("No request string provided")
             }
-        },   
+        },
     },
 
-    //Set field to retrive and highlight
-    base: function () {
-        return ejs.Request()
-            .source(["attachment._name", "attachment._date"])
-            .highlight(ejs.Highlight("attachment.content").numberOfFragments(3))
-            .query(
-            ejs.BoolQuery()
-                .must(
-                ejs.MatchQuery('attachment.content', elasticSearchBuilder.buildParam[REQUEST_STRING_FIELD]),
-                ejs.IdsQuery([1033, 1007, 1034, 1009, 1010, 1020, 1011, 1038]).type("document")
-                )
-            )
-    },
 
     //Pertinance, alphabétique , date croissante , date decroissante
     orderBy: function () {
@@ -173,5 +233,7 @@ var elasticSearchBuilder = {
     },
 
 }
-module.exports = elasticSearchBuilder.publicObject;
+
+
+module.exports = SearchBuilder;
 

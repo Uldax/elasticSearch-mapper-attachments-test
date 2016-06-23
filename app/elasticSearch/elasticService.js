@@ -16,7 +16,7 @@ var elasticSearchPort = conf.elastic.port,
 
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'error'
+    log: 'trace'
 });
 
 var elasticService = {
@@ -31,7 +31,6 @@ var elasticService = {
                 log_data_id: row.log_data_id,
                 //TODO : name = file label not file version label
                 name: row.label,
-                groupIds: [],
                 user_id : row.user_id
             }
             try {
@@ -241,19 +240,12 @@ var elasticService = {
     },
 
     /*************** SEARCH  **************** */
-    search: function (buildOption) {
+    search: function (objectRequest) {
         //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
-        return new Promise(function (resolve, reject) {
-            var objectRequest = elasticServiceBuilder.search(buildOption);
-            client.search({
+        return  client.search({
                 index: indexName,
                 body: objectRequest
-            }).then(function (resp) {
-                resolve(resp);
-            }, function (err) {
-                reject(err);
-            });
-        });
+            })
     },
 
     searchTest: function () {
