@@ -16,7 +16,7 @@ var elasticSearchPort = conf.elastic.port,
 
 var client = new elasticsearch.Client({
     host: serverIp + ":" + elasticSearchPort,
-    log: 'trace'
+    log: 'error'
 });
 
 var elasticService = {

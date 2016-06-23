@@ -63,12 +63,8 @@ class SearchBuilder {
     }
 
     filter() {
-        return ejs.ConstantScoreQuery()
-            .filter(
-            ejs.BoolQuery().must(
-                this.userFilter()
-            ))
-
+        return ejs.
+            BoolQuery().must(this.userFilter())
     }
 
     query() {
@@ -76,9 +72,11 @@ class SearchBuilder {
             .BoolQuery()
             .should([
                 ejs.MatchQuery('attachment.content', this.requestParam[REQUEST_STRING_FIELD]),
+                ejs.MatchQuery('attachment.name', this.requestParam[REQUEST_STRING_FIELD]),
                 ejs.MatchQuery('pinboard_label', this.requestParam[REQUEST_STRING_FIELD]),
                 ejs.MatchQuery('pin_content', this.requestParam[REQUEST_STRING_FIELD])
             ])
+
     }
 
     //Set field to retrive and highlight
@@ -95,7 +93,7 @@ class SearchBuilder {
     }
 
     get search() {
-        return ejs.Request()
+        var ejsJSON = ejs.Request()
             //exclude sources
             .source(["pinboard_label",
                 "created_by",
@@ -104,19 +102,21 @@ class SearchBuilder {
                 "pin_vote",
                 "attachment.title",
                 "document_type",
-                "file_label"])
+                "file_label",
+                "groups_ids"])
             .highlight(this.highlight())
             .query(
             this.query()
             );
+            //because ejs don't supper filter in bool we do it ourself
+            ejsJSON.toJSON().query.bool.filter = this.filter();
+             ejsJSON.toJSON().query.bool.minimum_should_match = 1
+        return ejsJSON;
     }
 
 }
 
 var elasticSearchBuilder = {
-
-
-
 
     bodySearch: {},
     //List of console log
