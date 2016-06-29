@@ -10,15 +10,44 @@ var elasticUpdater = {
     //Boolean used to know if we can update now or wait
     curentUpdate: false,
 
+    lastNumberWhenUpdate: 1,
+
+    idInterval : null,
+
     //All results states after update
     state: [],
 
+    timeBetweenUpdate : 5000,
+
+
+
     //Used of notify/listen form pgsql but we choose to use schedule update
+    //The setInterval method returns a handle that you can use to clear the interval.
     start: function () {
-        //setInterval(elasticUpdater.readUpdateTable, 10000);
-        console.log("get downtieme update")
-        elasticUpdater.readUpdateTable().then(function () {
-            if (elasticUpdater.state.length > 0) {
+        elasticUpdater.idInterval = setInterval(elasticUpdater.executeUpdate, elasticUpdater.timeBetweenUpdate);    
+    },
+
+    wakeUp: function () {
+         console.log("wakeup");
+        updateModel.unlisten();
+        elasticUpdater.start();
+    },
+
+    sleep: function () {
+        console.log("sleep");
+        clearInterval(elasticUpdater.idInterval);
+        updateModel.listenChannel("update", elasticUpdater.wakeUp);
+    },
+
+    //recursive function
+    executeUpdate: function () {
+        console.log("get downtime update")
+        elasticUpdater.readUpdateTable().then(function (actionLength) {
+            if (elasticUpdater.lastNumberWhenUpdate == 0 && actionLength == 0) {
+                return elasticUpdater.sleep();
+            }
+            elasticUpdater.lastNumberWhenUpdate = actionLength;
+            if (actionLength > 0) {
                 console.log(elasticUpdater.state);
             }
             var rejectResult = elasticUpdater.state.filter(x => x.status === "rejected");
@@ -28,10 +57,14 @@ var elasticUpdater = {
             rejectResult.forEach(function (element) {
                 console.log(element.e);
             }, this);
+            console.log("again");
+
         }).catch(function (err) {
-            console.log("Not in action")
+            console.log("in executeUpdate")
             console.log(err);
         })
+
+
     },
 
     //Daemon that do update every minute
@@ -74,7 +107,7 @@ var elasticUpdater = {
                         }
                     })
                     .then(function () {
-                        resolve();
+                        resolve(elasticUpdater.state.length);
                     })
                     .catch(function (err) {
                         elasticUpdater.curentUpdate = false;

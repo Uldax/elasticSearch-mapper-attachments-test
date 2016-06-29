@@ -62,6 +62,7 @@ BEGIN
         THEN
         SELECT content.type.type_id INTO t_id FROM content.type WHERE table_name = TG_TABLE_NAME;
         INSERT INTO public.update (update_id, type_id, op, updated) VALUES (up_id,t_id,opcode, now());
+        PERFORM pg_notify('update', TG_TABLE_NAME );
     END IF;
     RETURN NULL;
 END;
