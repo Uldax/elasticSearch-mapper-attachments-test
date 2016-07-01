@@ -4,61 +4,90 @@
 var documentModel = require('../../models/document.js');
 var pinModel = require('../../models/pin.js');
 var elasticService = require("../elasticService");
+var utils = require("../../helper/utils");
 
-var Action = class Action {
-    constructor(update_id, type_id, op) {
+class ActionUpdate {
+    constructor(table_name, update_id, type_id, op) {
         this.update_id = update_id;
         this.type_id = type_id;
         this.op = op;
-        this.status = "pending"
-        this.promise = null;
+        this.table_name = table_name;
     }
-}
 
+    //create the promise
+    get promise() {
+        return this.reflect(this.createActionUpdate());
+    }
 
-var elasticActions = {
-
-    // Action factory that contain promise
-    createActionUpdate: function (element) {
-
-        var table_name = element.table_name,
-            log_data_id = element.update_id,
-            type_id = element.type_id,
-            op = element.op,
-            action = new Action(log_data_id, type_id, op);
-
-        switch (table_name) {
+    createActionUpdate() {
+        switch (this.table_name) {
             case 'pin':
-                //action.promise = actionPin(op, log_data_id)
-                return elasticActions.actionPin(op, log_data_id);
+                return this.actionPin(this.op, this.update_id);
 
             case 'vote_pin':
-                return elasticActions.actionVotePin(op, log_data_id);
+                return this.actionVotePin(this.op, this.update_id);
 
             case 'version':
-                return elasticActions.actionDocument(op, log_data_id);
+                return this.actionDocument(this.op, this.update_id);
 
             case 'file_group':
-                return elasticActions.actionFile_Group(op, log_data_id);
+                return this.actionFile_Group(this.op, this.update_id);
 
             case 'pinboard_group':
-                return elasticActions.actionPinboard_Group(op, log_data_id);
+                return this.actionPinboard_Group(this.op, this.update_id);
 
             case 'layout':
-                return elasticActions.actionLayout(op, log_data_id);
+                return this.actionLayout(this.op, this.update_id);
 
             case 'pinboard':
-                return elasticActions.actionPinboard(op, log_data_id);
+                return this.actionPinboard(this.op, this.update_id);
 
             default:
                 break;
         }
         return Promise.reject("CreateActionUpdate : no action found");
-    },
+    }
 
+    resolve(v) {
+        return {
+            id: this.update_id,
+            type_id: this.type_id,
+            op: this.op,
+            v: v,
+            status: 'resolve'
+        }
+    }
+
+    reject(e) {
+        return {
+            id: this.update_id,
+            type_id: this.type_id,
+            op: this.op,
+            e: (e.message || e),
+            status: 'rejected'
+        }
+    }
+
+    reflect(promise) {
+
+        var that = this;
+        if (utils.isFunction(promise)) {
+            return promise().then(function (v) {
+                    return that.resolve(v);
+                },
+                function (e) { return that.reject(e); });
+        } else {
+            return promise.then(function (v) {
+                return that.resolve(v);
+            },
+                function (e) { return that.reject(e); });
+        }
+    }
+
+    //List of action 
     //Index document by converting it's content with base64 or update meta data
     //each document had version
-    actionDocument: function (op, update_id) {
+    actionDocument(op, update_id) {
         return new Promise(function (resolve, reject) {
             documentModel.getVersionById(update_id)
                 .then(function (row_to_update) {
@@ -78,10 +107,10 @@ var elasticActions = {
                     reject("In action document " + (err.message || err));
                 })
         });
-    },
+    }
 
     //Add to document the groups that have access to it
-    actionFile_Group: function (op, log_data_id) {
+    actionFile_Group(op, log_data_id) {
         return new Promise(function (resolve, reject) {
             documentModel.getFile_GroupByLogData(log_data_id)
                 .then(function (row) {
@@ -103,38 +132,45 @@ var elasticActions = {
                     reject("in actionFile_Group " + (err.message || err));
                 })
         });
-    },
+    }
 
     //Index or update pin with pinboard and layout metadata
-    actionPin: function (op, log_data_id) {
+    actionPin(op, log_data_id) {
         return new Promise(function (resolve, reject) {
             //Get the ligne to update  
-            Promise.resolve().then(function () {
-                if (op == "I") {
-                    pinModel.getPinInfoById(log_data_id)
-                        .then(function (row_to_insert) {
-                            return elasticService.createPin(row_to_insert);
-                        })
-                }
-                else if (op == "U") {
-                    pinModel.getPinUpdateInfoById(log_data_id).then(function (row_to_update) {
-                        return elasticService.updatePin(row_to_update);
-                    })
-                } else {
-                    throw new Error("Unknow op");
-                }
-            })
-                .then(function (status) {
-                    resolve(status);
+            Promise.resolve("les nouveau commercant")
+                .then(function () {
+                    if (op == "I") {
+                        pinModel.getPinInfoById(log_data_id)
+                            .then(function (row_to_insert) {
+                                return elasticService.createPin(row_to_insert);
+                            }).then(function (status) {
+                                resolve(status);
+                            })
+                            .catch(function (err) {
+                                reject("in actionPin " + (err.message || err));
+                            })
+                    }
+                    else if (op == "U") {
+                        pinModel.getPinUpdateInfoById(log_data_id)
+                            .then(function (row_to_update) {
+                                return elasticService.updatePin(row_to_update);
+                            }).then(function (status) {
+                                resolve(status);
+                            })
+                            .catch(function (err) {
+                                reject("in actionPin " + (err.message || err));
+                            })
+                    } else {
+                        throw new Error("Unknow op");
+                    }
                 })
-                .catch(function (err) {
-                    reject("in actionPin " + (err.message || err));
-                })
+
         })
-    },
+    }
 
     //Store the vote associate to a pin
-    actionVotePin: function (op, log_data_id) {
+    actionVotePin(op, log_data_id) {
         return new Promise(function (resolve, reject) {
             pinModel.getPinVote(log_data_id)
                 .then(function (row) {
@@ -151,10 +187,10 @@ var elasticActions = {
                     reject("in actionVotePin " + (err.message || err));
                 })
         });
-    },
+    }
 
     //Add to pin the groups that have access to it
-    actionPinboard_Group: function (op, log_data_id) {
+    actionPinboard_Group(op, log_data_id) {
         return new Promise(function (resolve, reject) {
             pinModel.getGroupForPinboardByLogdata(log_data_id)
                 .then(function (row) {
@@ -173,10 +209,10 @@ var elasticActions = {
                     reject("in actionFile_Group " + (err.message || err));
                 })
         });
-    },
+    }
 
     //Update pin if pinboard change
-    actionPinboard: function (op, log_data_id) {
+    actionPinboard(op, log_data_id) {
         return new Promise(function (resolve, reject) {
             //Get the ligne to update
             pinModel.getPinboardByLogdata(log_data_id)
@@ -194,10 +230,10 @@ var elasticActions = {
                     reject("in actionPinboard " + (err.message || err));
                 })
         });
-    },
+    }
 
     //Update pin if layout change
-    actionLayout: function (op, log_data_id) {
+    actionLayout(op, log_data_id) {
         return new Promise(function (resolve, reject) {
             //Get the ligne to update
             pinModel.getLayoutByLogdata(log_data_id)
@@ -215,10 +251,6 @@ var elasticActions = {
                 })
         });
     }
-
 }
 
-
-
-
-module.exports = elasticActions;
+module.exports = ActionUpdate;

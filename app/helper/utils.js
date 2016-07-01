@@ -53,6 +53,7 @@ var utils = {
         });
     },
 
+
     //Get extension from string
     getExt: function (path) {
         var i = path.lastIndexOf('.');

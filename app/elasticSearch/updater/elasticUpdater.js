@@ -3,32 +3,29 @@
 var updateModel = require('../../models/update.js');
 var elasticService = require("../elasticService");
 var elasticActions = require("./actionUpdate");
+var elasticActionRefresh = require("./actionRefresh");
 var utils = require("../../helper/utils");
 
+//todo singleton 
 
 var elasticUpdater = {
     //Boolean used to know if we can update now or wait
     curentUpdate: false,
-
     lastNumberWhenUpdate: 1,
-
-    idInterval : null,
-
+    idInterval: null,
     //All results states after update
     state: [],
-
-    timeBetweenUpdate : 5000,
-
-
+    timeBetweenUpdate: 5000,
 
     //Used of notify/listen form pgsql but we choose to use schedule update
     //The setInterval method returns a handle that you can use to clear the interval.
     start: function () {
-        elasticUpdater.idInterval = setInterval(elasticUpdater.executeUpdate, elasticUpdater.timeBetweenUpdate);    
+        //elasticUpdater.idInterval = setInterval(elasticUpdater.executeUpdate, elasticUpdater.timeBetweenUpdate);
+        elasticUpdater.executeUpdate();
     },
 
     wakeUp: function () {
-         console.log("wakeup");
+        console.log("wake up");
         updateModel.unlisten();
         elasticUpdater.start();
     },
@@ -58,6 +55,7 @@ var elasticUpdater = {
                 console.log(element.e);
             }, this);
             console.log("again");
+            setTimeout( elasticUpdater.executeUpdate, 5000);
 
         }).catch(function (err) {
             console.log("in executeUpdate")
@@ -81,13 +79,19 @@ var elasticUpdater = {
                         for (var row in rows) {
                             if (rows.hasOwnProperty(row)) {
                                 var element = rows[row];
-                                actionPromises.push(createCallbackAction(element));
+                                var table_name = element.table_name,
+                                    log_data_id = element.update_id,
+                                    type_id = element.type_id,
+                                    op = element.op;
+                                    
+                                //use closure to pass element to action
+                                actionPromises.push(new elasticActions(table_name, log_data_id, type_id, op));
                                 updateIds.push(element.update_id);
                             }
                         }
                         if (actionPromises.length > 0) {
                             //refresh to allowed direct search after update
-                            actionPromises.push(function () { return reflect(elasticService.refresh()) });
+                            actionPromises.push( new elasticActionRefresh() );
                             return pseries(actionPromises)
                         } else {
                             return Promise.resolve();
@@ -128,31 +132,21 @@ function pseries(list) {
     //La méthode reduce() applique une fonction qui est un « accumulateur »
     // traite chaque valeur d'une liste (de la gauche vers la droite)
     // afin de la réduire à une seule valeur.
-    return list.reduce(function (pacc, fn) {
-        return pacc = pacc.then(function (res) {
+    return list.reduce(function (action, nextAction) {
+
+        return action = action.then(function (res) {
             if (res) {
                 //Store the result of every action
                 elasticUpdater.state.push(res);
                 console.log(elasticUpdater.state.length + " of " + intialSize);
             }
-            return fn();
+            return nextAction.promise;
         });
     }, p);
 
 }
 
-//allow to continue promise.all regardless of if one promise has failed.
-// todo add id update in promise reject
-function reflect(promise) {
-    if (utils.isFunction(promise)) {
-        return promise().then(function (v) { return { v: v, status: "resolved" } },
-            function (e) { return { e: (e.message || e), status: "rejected" } });
-    } else {
-        return promise.then(function (v) { return { v: v, status: "resolved" } },
-            function (e) { return { e: (e.message || e), status: "rejected" } });
-    }
 
-}
 
 //Magic here with closure
 // Si une des promesses de l'itérable est rejetée (n'est pas tenue), 
@@ -160,7 +154,12 @@ function reflect(promise) {
 // d'ou l'utilisation de reflect
 function createCallbackAction(element) {
     return function () {
-        return reflect(elasticActions.createActionUpdate(element));
+        //return reflect(elasticActions.createActionUpdate(element));
+        var table_name = element.table_name,
+            log_data_id = element.update_id,
+            type_id = element.type_id,
+            op = element.op;
+        return new elasticActions(table_name, log_data_id, type_id, op);
     };
 }
 

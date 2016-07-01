@@ -113,6 +113,7 @@ router.post('/searchTest', function (req, res, next) {
     user.getGroupsForUser(userAuth)
         .then(function (row) {
             const sb = new SearchBuilder(req.body,row.array,userAuth);
+            console.log(sb);
             return elasticService.search(sb.search);       
         })
         .then(function(results){

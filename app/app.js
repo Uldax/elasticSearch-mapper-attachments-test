@@ -6,6 +6,7 @@ var bodyParser = require('body-parser');
 var routes = require('./controllers/index');
 var elasticUpdater = require('./elasticSearch/updater/elasticUpdater');
 var elasticImporter = require('./elasticSearch/elasticImporter');
+var testM = require('./models/test');
 var app = express();
 
 // view engine setup
@@ -29,6 +30,7 @@ if (process.argv[2] === "import") {
 }
 else{
     elasticUpdater.start();
+    //testM.crawlFoler("../indexedDocuments");
 }
 
 // catch 404 and forward to error handler

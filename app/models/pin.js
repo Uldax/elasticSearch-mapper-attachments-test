@@ -22,8 +22,8 @@ var pinModel = {
     //for pin update 
     getPinUpdateInfoById: function (log_data_id) {
         return db.one("SELECT label,log_data_id, pin_id " +
-            "FROM pinboard.pinboard " +
-            "WHERE pinboard.pinboard.log_data_id = $1 ", log_data_id);
+            "FROM pinboard.pin " +
+            "WHERE pinboard.pin.log_data_id = $1 ", log_data_id);
 
     },
 

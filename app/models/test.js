@@ -113,6 +113,7 @@ var testModel = {
                 })
         })
     },
+
     restart_db: function () {
         return testModel.removeTrigger()
             .then(function (mess) {
@@ -152,18 +153,19 @@ var testModel = {
 
     //First document insert
     insertFileInFolder: function (folder_name, file_name, file_path) {
-        return new Promise(function (resolve, reject) {
-            db.one("SELECT folder_id FROM file.folder WHERE label = $1", folder_name).then(function (row) {
-                var folder_id = row.folder_id;
-                db.one("INSERT INTO file.file (label, folder_id, user_id) VALUES ($1,$2, 1) RETURNING file_id;", [file_name, folder_id]).then(function (row) {
-                    var file_id = row.file_id;
-                    resolve(testModel.insertFileVersion(file_id, file_path));
-                }).catch(utils.onError)
-            }).catch(utils.onError)
-        })
 
+        return db.one("SELECT folder_id FROM file.folder WHERE label = $1", folder_name)
+            .then(function (row) {
+                var folder_id = row.folder_id;
+                return db.one("INSERT INTO file.file (label, folder_id, user_id) VALUES ($1,$2, 1) RETURNING file_id;", [file_name, folder_id])
+            }).then(function (row) {
+                var file_id = row.file_id;
+                return testModel.insertFileVersion(file_id, file_path);
+            })
+            .catch(utils.onError)
     },
 
+    //Not used alone
     //Second for document update
     insertFileVersion: function (id_file, path) {
         return db.one("INSERT INTO file.version (file_id, label, path, user_id) VALUES " +
@@ -230,6 +232,20 @@ var testModel = {
             "ON file.version.file_id = file.file.file_id WHERE file.label = $1", [file_name]);
     },
 
+    //test for many document
+    crawlFoler: function (folder) {
+        var promiseArray =[];
+        utils.readFolder(folder, function (filename) {
+            promiseArray.push(testModel.insertFileInFolder("root",filename,folder+"/"+filename));
+            Promise.all(promiseArray)
+            .then(function(){
+                console.log("ok for crawl");
+            })
+            .catch(function(err){
+                console.log(err);
+            })
+        }, utils.onError)
+    }
 
 }
 
