@@ -13,6 +13,7 @@
     "debug": "~2.2.0",
     "elasticsearch": "^11.0.1",
     "express": "~4.13.1",
+    "express-ipfilter": "0.0.25",
     "gulp-nodemon": "^2.1.0",
     "jade": "~1.11.0",
     "mocha": "^2.5.3",
