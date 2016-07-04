@@ -46,45 +46,45 @@ var testModel = {
                         "AFTER INSERT OR UPDATE " +
                         "ON file.version " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
 
 
                     t.none("CREATE TRIGGER pinboard_change_trigger " +
                         "AFTER UPDATE " +
                         "ON pinboard.pinboard " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
 
 
                     t.none("CREATE TRIGGER pin_change_trigger " +
                         "AFTER INSERT OR UPDATE " +
                         "ON pinboard.pin " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
 
                     t.none("CREATE TRIGGER layout_change_trigger " +
                         "AFTER UPDATE " +
                         "ON pinboard.layout " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
 
                     t.none("CREATE TRIGGER document_group_change_trigger " +
                         "AFTER INSERT OR DELETE " +
                         "ON file.file_group " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
 
                     t.none("CREATE TRIGGER vote_change_trigger " +
                         "AFTER INSERT OR UPDATE " +
                         "ON pinboard.vote_pin " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
 
                     t.none("CREATE TRIGGER pinboard_group_change_trigger " +
                         "AFTER INSERT OR DELETE " +
                         "ON pinboard.pinboard_group " +
                         "FOR EACH ROW " +
-                        "EXECUTE PROCEDURE on_change()"),
+                        "EXECUTE PROCEDURE public.on_change()"),
                 ]);
             })
                 .then(function (data) {

@@ -41,17 +41,16 @@ var updateModel = {
             });
     },
 
+    //maybe bug here
      unlisten: function () {
          if(sco) {
-            sco.done()
+            sco.done();
          } else {
              console.log("how can you listen ?");
          }
 
     }
-
-
-}
+};
 
 
 module.exports = updateModel;

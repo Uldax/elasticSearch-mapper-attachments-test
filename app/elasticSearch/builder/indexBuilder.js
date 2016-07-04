@@ -1,45 +1,46 @@
 "use strict";
 //Class that build request to send to elastic search serveur
-var conf = require("../../config"),
+const conf = require("../../config"),
     indexName = conf.elastic.mainIndex,
     utils = require("../../helper/utils");
 
 
-var elasticIndexBuilder = {
+const elasticIndexBuilder = {
 
-    createDocument: function (path, data) {
-        var base64file = utils.base64_encode("../" + path);
-        var fileSize = Buffer.byteLength(base64file);
+    createDocument: function (row) {
+        const base64file = utils.base64_encode("../" + row.path);
+        const fileSize = Buffer.byteLength(base64file);
         //id is set in url sent to elastic : http POST elastic/index/type/id
-        var requestData = {
+        const requestData = {
+            // using the _indexed_chars parameter. -1 can be set to extract all text
+            // but note that all the text needs to be allowed to be represented in memory
+            "_indexed_chars" : -1,
             "attachment": {
                 "_content": base64file,
-                "_name": data.name,
+                "_name": row.label,
                 "_content_length": fileSize
             },
-            "document_type": utils.getType(path),
-            "insertDate": utils.getTodayDateFormat(),
-            "document_id": data.document_id,
-            "version_id": data.version_id,
+            "document_type": utils.getType(row.path),
+            "insertDate": row.registration,
+            "document_id": row.file_id,
+            "version_id": row.version_id,
             //if not set , add values instead of add to array
             "groups_ids": [],
-            "created_by": data.user_id
-        }
+            "created_by": row.user_id
+        };
         return requestData;
     },
 
     updateDocumentVersion: function (row) {
         //id is set in url sent to elastic : http POST elastic/index/type/id
-        var requestData = {
+        return {
             "doc": {
                 "attachment": {
                     "_name": row.label,
                 },
                 "insertDate": utils.getTodayDateFormat(),
             }
-        }
-        return requestData;
-
+        };
     },
 
     //Files are in config/script under elasticSearch folder
@@ -58,12 +59,12 @@ var elasticIndexBuilder = {
                 }
             }
 
-        }
+        };
         return requestData;
     },
 
     removeGroupToDocument: function (group_id, document_id) {
-        var requestData = {
+        return {
             "query": {
                 "term": {
                     "document_id": document_id
@@ -76,8 +77,7 @@ var elasticIndexBuilder = {
                     "fieldToUpdate": "groups_ids"
                 }
             }
-        }
-        return requestData;
+        };
     },
 
     createPin: function (row, groupIds) {
@@ -86,7 +86,7 @@ var elasticIndexBuilder = {
             "pin_content": row.pin_label,
             "pinboard_label": row.pinboard_label,
             "pin_vote": 0,
-
+            "insertDate": row.registration,
             "layout_id": row.layout_id,
             "pin_id": row.pin_id,
             "pinboard_id": row.pinboard_id,
@@ -94,23 +94,22 @@ var elasticIndexBuilder = {
             "created_by": row.user_id
 
 
-        }
+        };
         return requestData;
     },
 
     updatePin: function (row, groupIds) {
-        var requestData =
-            {
-                doc: {
-                    "pin_content": row.label
-                }
+        return {
+            doc: {
+                "pin_content": row.label
             }
+        };
 
-        return requestData;
+
     },
 
     addGroupToPinboard: function (group_id, pinboard_id) {
-        var requestData = {
+        return {
             "query": {
                 "term": {
                     "pinboard_id": pinboard_id
@@ -123,12 +122,11 @@ var elasticIndexBuilder = {
                     "fieldToUpdate": "groups_ids"
                 }
             }
-        }
-        return requestData;
+        };
     },
 
     removeGroupToPinboard: function (group_id, pinboard_id) {
-        var requestData = {
+        return {
             "query": {
                 "term": {
                     "pinboard_id": pinboard_id
@@ -141,12 +139,11 @@ var elasticIndexBuilder = {
                     "fieldToUpdate": "groups_ids"
                 }
             }
-        }
-        return requestData;
+        };
     },
 
     updatePinWithPinboard: function (pinboard_label, pinboard_id) {
-        var requestData = {
+        return {
             "query": {
                 "term": {
                     "pinboard_id": pinboard_id
@@ -159,12 +156,11 @@ var elasticIndexBuilder = {
                     "fieldValue": pinboard_label
                 }
             }
-        }
-        return requestData;
+        };
     },
 
     updatePinWithLayout: function (layout_label, layout_id) {
-        var requestData = {
+        return{
             "query": {
                 "term": {
                     "layout_id": layout_id
@@ -177,8 +173,7 @@ var elasticIndexBuilder = {
                     "fieldValue": layout_label
                 }
             }
-        }
-        return requestData;
+        };
     },
 
 
@@ -207,7 +202,7 @@ var elasticIndexBuilder = {
         return myJson;
     },
 
-}
+};
 
 module.exports = elasticIndexBuilder;
 

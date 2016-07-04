@@ -3,23 +3,23 @@
 // Called with import parameter : npm bin/www import
 //Create index/Mapping and index data from database into elastic
 //Current data handle : file / version / pinboard / layout / pin
-
-
-var elasticService = require('./elasticService.js'),
+const elasticService = require('./elasticService.js'),
     documentModel = require('../models/document.js'),
     pinModel = require('../models/pin.js'),
     elasticUpdater = require('./updater/elasticUpdater.js');
 
-var elasticImporter = {
-
+const elasticImporter = {
     start: function () {
         console.log("Time to import");
-        bulk().then(function (message) {
-            console.log(message);
-        })
+
+        bulk()
+            .then(function (message) {
+                console.log(message);
+            })
             .catch(function (error) {
                 console.log(error.message || error);
             });
+
         importFiles()
             .then(function (message) {
                 console.log(message);
@@ -29,7 +29,7 @@ var elasticImporter = {
             });
     },
 
-}
+};
 
 function bulk() {
     //create json bulk file from db
@@ -37,7 +37,7 @@ function bulk() {
     return new Promise(function (resolve, reject) {
         pinModel.getAllPinInfo()
             .then(function (rows) {
-                if (rows.length != 0) {
+                if (rows.length !== 0) {
                     console.log("Call to service");
                     elasticService.bulkPin(rows).then(function (message) {
                         resolve(message);

@@ -1,66 +1,53 @@
 "use strict";
 //Classe that consume builder to perform request to elastic serveur
 //All methode return a Promise with success message or error log from elasticServer
-var request = require("request"),
+const request = require("request"),
     elasticServiceBuilder = require("./builder/indexBuilder"),
     conf = require("../config"),
     elasticsearch = require('elasticsearch'),
-    mapping = require('../elasticMapping');
+    mapping = require('../elasticMapping'),
 
-//Conf parameters
-var elasticSearchPort = conf.elastic.port,
+    //Conf parameters
+    elasticSearchPort = conf.elastic.port,
     protocol = conf.elastic.protocol,
     serverIp = conf.elastic.serverIp,
     indexName = conf.elastic.mainIndex,
-    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort
+    baseURL = protocol + "://" + serverIp + ":" + elasticSearchPort,
 
-var client = new elasticsearch.Client({
-    host: serverIp + ":" + elasticSearchPort,
-    log: 'error'
-});
+    client = new elasticsearch.Client({
+        host: serverIp + ":" + elasticSearchPort,
+        log: 'error'
+    });
 
-var elasticService = {
+const elasticService = {
     /*************** DOCUMENT  **************** */
     createDocument: function (row) {
         //! fileSize > 104857600      
-        return new Promise(function (resolve, reject) {
-            var path = row.path;
-            var data = {
-                document_id: row.file_id,
-                version_id: row.version_id,
-                log_data_id: row.log_data_id,
-                //TODO : name = file label not file version label
-                name: row.label,
-                user_id : row.user_id
-            }
-            try {
-                var requestData = elasticServiceBuilder.createDocument(path, data);
-                client.create({
-                    id: data.log_data_id,
-                    index: indexName,
-                    type: 'document',
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("Document " + data.document_id + " version " + data.version_id + " inserted");
-                }, function (err) {
-                    reject(err.message || err);
-                });
-            } catch (err) {
-                reject(err.message || err);
-            }
-        });
+        try {
+            const requestData = elasticServiceBuilder.createDocument(row);
+            return client.create({
+                id: row.log_data_id,
+                index: indexName,
+                type: 'document',
+                body: requestData
+            });
+        }
+        catch (err) {
+            return Promise.reject(err.message || err);
+        }
+
     },
 
     //In update we don't reindex the content of file :
     //if the content change , there is a new version so it's insertDocument
     updateDocument: function (row) {
-        var requestData = elasticServiceBuilder.updateDocumentVersion(row);
+        const requestData = elasticServiceBuilder.updateDocumentVersion(row);
         return client.update({
             index: indexName,
             type: 'document',
             id: row.log_data_id,
             body: requestData
-        })
+        });
     },
 
     /*************** UPDATE BY QUERY : Multi update  **************** */
@@ -71,7 +58,7 @@ var elasticService = {
     //so it’s possible for there to be quite a few.
     sendUpdateByQuery: function (url, requestObject) {
         return new Promise(function (resolve, reject) {
-            var options = {
+            const options = {
                 method: 'POST',
                 url: baseURL + url + "/_update_by_query?refresh",
                 json: requestObject,
@@ -85,18 +72,18 @@ var elasticService = {
                         //EveryThing works
                         case 200:
                             //TODO handle 
-                            if ( (typeof body != undefined) && body.total > 0)  {
-                                if(body.total == body.updated)  {
+                            if ((typeof body !== undefined) && body.total > 0) {
+                                if (body.total == body.updated) {
                                     resolve(body.total + " document updated");
                                 } else if (body.total == body.noops) {
                                     resolve(body.total + " update ignored");
                                 }
                             }
-                                    
+
                             else {
                                 //TODO handle other case
                                 console.log(body);
-                                reject(body)
+                                reject(body);
                             }
                             break;
                         //Conflict
@@ -114,6 +101,7 @@ var elasticService = {
                         //Todo : find
                         case 500:
                             reject("Bad request object");
+                            break;
                         default:
                             console.log("default");
                             reject(response.statusCode);
@@ -122,8 +110,8 @@ var elasticService = {
                 } else {
                     reject(err);
                 }
-            })
-        })
+            });
+        });
 
     },
 
@@ -133,10 +121,6 @@ var elasticService = {
 
     removeGroupToDocument: function (group_id, document_id) {
         return this.sendUpdateByQuery("/opus/document/", elasticServiceBuilder.removeGroupToDocument(group_id, document_id));
-    },
-
-    updatePinBoard: function (id) {
-        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.updatePinBoard(group_id, document_id));
     },
 
     addGroupToPinboard: function (group_id, pinboard_id) {
@@ -155,13 +139,17 @@ var elasticService = {
         return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.updatePinWithLayout(layout_label, layout_id));
     },
 
+    updatePinwithPinBoard: function (pinboard_label, pinboard_id) {
+        return this.sendUpdateByQuery("/opus/pin/", elasticServiceBuilder.updatePinWithPinboard(pinboard_label, pinboard_id));
+    },
+
     /*************** IMPORT  **************** */
     bulkPin: function (rows) {
         return new Promise(function (resolve, reject) {
-            var body_json = elasticServiceBuilder.bulkPin(rows);
-            if (body_json) {
+            const requestData = elasticServiceBuilder.bulkPin(rows);
+            if (requestData) {
                 client.bulk({
-                    body: body_json
+                    body: requestData
                 }).then(function (resp) {
                     resolve("All pinboards indexed");
                 }, function (err) {
@@ -171,81 +159,66 @@ var elasticService = {
             else {
                 reject("No JSON for bulk");
             }
-        })
+        });
     },
 
     /*************** PIN  **************** */
     createPin: function (row) {
-        return new Promise(function (resolve, reject) {
-            try {
-                var requestData = elasticServiceBuilder.createPin(row);
-                client.create({
-                    index: indexName,
-                    type: 'pin',
-                    id: row.log_data_id,
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("PIN id " + row.pin_id + " inserted");
-                }, function (err) {
-                    reject("in create pin" + (err.message || err));
-                });
-            } catch (error) {
-                reject(error.message || error);
-            }
-
-        });
+        try {
+            const requestData = elasticServiceBuilder.createPin(row);
+            return client.create({
+                index: indexName,
+                type: 'pin',
+                id: row.log_data_id,
+                body: requestData
+            });
+        } catch (error) {
+            return Promise.reject(error.message || error);
+        }
     },
 
 
-     updatePin: function (row) {
-        return new Promise(function (resolve, reject) {
-            try {
-                var requestData = elasticServiceBuilder.updatePin(row);
-                client.update({
-                    index: indexName,
-                    type: 'pin',
-                    id: row.log_data_id,
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("PIN id " + row.pin_id + " updated");
-                }, function (err) {
-                    reject("in create pin" + (err.message || err));
-                });
-            } catch (error) {
-                reject(error.message || error);
-            }
-
-        });
+    updatePin: function (row) {
+        try {
+            const requestData = elasticServiceBuilder.updatePin(row);
+            return client.update({
+                index: indexName,
+                type: 'pin',
+                id: row.log_data_id,
+                body: requestData
+            });
+        } catch (error) {
+            return Promise.reject(error.message || error);
+        }
     },
 
+    //Maybe latter it'll exist other pin unique update
     //pin_log_data_id is the id of a pin in elastic index
-    //todo upsert
     sendUpdatePin: function (pin_log_data_id, requestData) {
-
         return client.update({
             index: indexName,
             type: 'pin',
             id: pin_log_data_id,
             body: requestData
-        })
+        });
     },
 
     updateVote: function (log_data_id, vote) {
-        var requestData = {
+        const requestData = {
             "doc": {
                 "pin_vote": vote
             }
-        }
+        };
         return elasticService.sendUpdatePin(log_data_id, requestData);
     },
 
     /*************** SEARCH  **************** */
     search: function (objectRequest) {
         //https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-get
-        return  client.search({
-                index: indexName,
-                body: objectRequest
-            })
+        return client.search({
+            index: indexName,
+            body: objectRequest
+        });
     },
 
     searchTest: function () {
@@ -291,7 +264,7 @@ var elasticService = {
             }, function (error, response) {
                 resolve(response);
             });
-        })
+        });
 
     },
 
@@ -312,14 +285,13 @@ var elasticService = {
     },
 
     //Create first index and mapping for elastic
-    //TODO test
     createIndex: function (indexName) {
         //Allow use to do the promise one after the other
         return client.indices.exists({ index: "opus" })
             .then(function (exist) {
                 if (exist) {
-                    return client.indices.delete({ index: "opus" })
-                } else return Promise.resolve()
+                    return client.indices.delete({ index: "opus" });
+                } else return Promise.resolve();
             })
             .then(function () {
                 return client.indices.create({ index: "opus" });
@@ -333,34 +305,8 @@ var elasticService = {
             .catch(function (err) {
                 throw new Error(err.message || err);
             });
-
-    },
-
-    countFromAnOtherWorld(type) {
-        //index file
-        //Option for resquest
-        var options = {
-            method: 'GET',
-            url: baseURL + "/opus/_count",
-        };
-        return new Promise(function (resolve, reject) {
-            request(options, function (err, response, body) {
-                if (!err) {
-                    if (response.statusCode === 200) {
-                        if (typeof body != undefined) {
-                            resolve(JSON.parse(body));
-                        }
-                    } else {
-                        reject(err);
-                    }
-                }
-            })
-        })
     }
-}
-
-
-
+};
 
 module.exports = elasticService;
 

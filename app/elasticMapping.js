@@ -5,7 +5,6 @@ var mapping = {
                 "attachment": {
                     "type": "attachment",
                     //Index all content
-                     "_indexed_chars" : -1,
                     "fields": {
                         "content": {
                             "type": "string",
@@ -29,8 +28,9 @@ var mapping = {
                     "type": "string"
                 },
                 "insertDate": {
-                    "type": "date",
-                    "format": "dd/MM/yyyy"
+                    //This means that it will accept dates with optional timestamps,
+                    //which conform to the formats supported by strict_date_optional_time or milliseconds-since-the-epoch.
+                    "type": "date"
                 },
                 "file_label": {
                     "type": "string"
@@ -86,11 +86,14 @@ var mapping = {
                  //If pin doesn't have group
                 "created_by" : {
                     "type": "long"
+                },
+                 "insertDate": {
+                    "type": "date"
                 }
 
             }
         }
     }
-}
+};
 
-module.exports = mapping
+module.exports = mapping;

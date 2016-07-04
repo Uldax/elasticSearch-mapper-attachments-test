@@ -28,7 +28,7 @@ INSERT into content.type(
 
 
 ------------------------------------------------------------
--- Trigger: version change
+-- Trigger: on_change : use type for internal use
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION on_change()
   RETURNS trigger AS
@@ -125,7 +125,7 @@ ALTER FUNCTION on_pin_change()
   
 
 -- version trigger
-
+--
 CREATE OR REPLACE FUNCTION on_version_change()
   RETURNS trigger AS
 $BODY$

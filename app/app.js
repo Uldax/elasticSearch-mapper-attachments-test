@@ -6,7 +6,7 @@ var logger = require('morgan');
 var bodyParser = require('body-parser');
 var ipfilter = require('express-ipfilter');
 var routes = require('./controllers/index');
-var elasticUpdater = require('./elasticSearch/updater/elasticUpdater');
+var ElasticUpdater = require('./elasticSearch/updater/elasticUpdater');
 var elasticImporter = require('./elasticSearch/elasticImporter');
 var testM = require('./models/test');
 var util = require('util');
@@ -17,15 +17,15 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 // a first middleware, a logger in console, just to show ip
-app.use(function(req, res, next){
+app.use(function (req, res, next) {
   console.log('%s %s from %s , proxy: %s', req.method, req.url, req.ip, util.inspect(req.ips));
   next();
 });
 
 //Whitelisting certain IP addresses, while denying all other IPs:
 //Postman and local host
-var ips = ['::ffff:127.0.0.1','127.0.0.1'];
-app.use(ipfilter(ips, {mode: 'allow'}));
+var ips = ['::ffff:127.0.0.1', '127.0.0.1'];
+app.use(ipfilter(ips, { mode: 'allow' }));
 
 
 // uncomment after placing your favicon in /public
@@ -34,12 +34,12 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/bower_components',  express.static(__dirname + '/bower_components'));
+app.use('/bower_components', express.static(__dirname + '/bower_components'));
 app.use('/', routes);
 
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
   next(err);
@@ -50,7 +50,7 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
+  app.use(function (err, req, res, next) {
     res.status(err.status || 500);
     res.render('error', {
       message: err.message,
@@ -61,7 +61,7 @@ if (app.get('env') === 'development') {
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error', {
     message: err.message,
@@ -73,12 +73,20 @@ app.use(function(err, req, res, next) {
 //Set up elastic updater
 //Warning may be heavy
 if (process.argv[2] === "import") {
-    console.log("Import Process ..");
-    elasticImporter.start();
+  console.log("Import Process ..");
+  elasticImporter.start();
 }
-else{
-    elasticUpdater.start();
-    //testM.crawlFoler("../indexedDocuments");
+else {
+
+  //singleton : test
+  let eu = new ElasticUpdater();
+  console.log(eu.time);
+  setTimeout(function () {
+    let eu = new ElasticUpdater();
+    console.log(eu.time);
+  }, 4000);
+  eu.executeUpdate();
+  //testM.crawlFoler("../indexedDocuments");
 }
 
 
