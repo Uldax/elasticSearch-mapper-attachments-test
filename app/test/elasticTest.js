@@ -42,7 +42,7 @@ function onError(err) {
 function clean_all() {
     return testModel.restart_db()
         .then(function () {
-            return testModel.insertFolder("root")
+            return testModel.insertFolder("root");
         })
         .then(function () {
             return service.createIndex();
@@ -104,24 +104,24 @@ describe('Elastic Search', function () {
                 // In we clean and set the trigger for the bd
                 return Promise.resolve()
                     .then(function () {
-                        return testModel.restart_db()
+                        return testModel.restart_db();
                     })
                     .then(function () {
-                        return testModel.insertFolder("root")
+                        return testModel.insertFolder("root");
                     })
                     .then(function () {
-                        return client.indices.exists({ index: "opus" })
+                        return client.indices.exists({ index: "opus" });
                     })
                     .then(function (exist) {
                         if (exist) {
-                            return client.indices.delete({ index: "opus" })
+                            return client.indices.delete({ index: "opus" });
                         } else {
-                            return Promise.resolve()
+                            return Promise.resolve();
                         }
                     })
                     .then(function () {
                         service.createIndex().then(function () {
-                            done()
+                            done();
                         })
                     })
                     .catch(function (err) {
@@ -201,7 +201,7 @@ describe('Elastic Search', function () {
         })
 
         describe('Pinboard update', function () {
-            it("Pinboard insert do nothing")
+            it("Pinboard insert do nothing");
             it("Pinboard update must update all pin concerned in elastic")
             it("Pinboard unindex");
         })
@@ -214,8 +214,8 @@ describe('Elastic Search', function () {
         })
 
         describe('Layout update', function () {
-            it("Layout insert do nothing")
-            it("Layout update must update all pin concerned in elastic")
+            it("Layout insert do nothing");
+            it("Layout update must update all pin concerned in elastic");
             it("Layout unindex");
         })
 
@@ -247,18 +247,18 @@ describe('Elastic Search', function () {
                     .catch(function (err) {
                         console.log(err.message || err);
                     });
-            })
+            });
 
             it('Updater should remove staged error after X run')
-        })
+        });
 
 
-    })
+    });
 
     after(function (done) {
         return testModel.restart_db()
             .then(function (mes) {
-                console.log(mes)
+                console.log(mes);
                 return service.createIndex();
             })
             .then(function () {
@@ -267,7 +267,7 @@ describe('Elastic Search', function () {
             })
             .catch(function (err) {
                 console.log(err);
-            })
+            });
     });
 
 })

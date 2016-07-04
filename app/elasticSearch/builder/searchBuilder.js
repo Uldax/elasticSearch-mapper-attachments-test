@@ -1,49 +1,43 @@
 "use strict";
 //Class that build request to send to elastic search serveur
-
-//TODO : add date , exact , type  
-//Param send to search endPoint
-const ALL_RESULTS = 0;
-const EXACT_WORD = 1;
-const RELEVANCE = 0;
-const ALPHABETICAL = 1;
-const DATE_ASC = 2;
-const DATE_DESC = 3;
-const ALL_DOCUMENT_TYPES = 0;
-const BULLETIN_BOARD = 1;
-const PDF = 2;
-const DOC = 3;
-
-//TODO move to conf
-const ALLOWED_TYPE = [PDF, DOC, BULLETIN_BOARD];
-
-const REQUEST_STRING_FIELD = "requestString";
-const USET_AUTH_FIELD = "userAuth";
-const DOCTYPE_FIELD = "docType";
-const ORDER_BY_FIELD = "orderBy";
-const EXACT_FIELD = "exact";
-const DATE_FIELD = "date";
-const DATE_BEGIN = "begin";
-const DATE_END = "end";
-
-
-var ejs = require('../../helper/elastic');
-
-
-
 /*
 Param{
-    userAuth,
-    queryString,
-    exact,
-    doctype,
-    orderBy,
-    date{
-        begin,
-        end
-    }
+    requestString : string
+    userId : string
+
+    //Facultatif
+    exact : (true || empty) or false
+    doctype : field or array { field }
+    orderBy : field or array { fieldName : string , order : (asc || desc)}
+    date : array { begin, end } || array { before } || array { after}
 }
 */
+
+//Param send to search endPoint
+const ALL_RESULTS = 0,
+    EXACT_WORD = 1,
+    RELEVANCE = 0,
+    ALPHABETICAL = 1,
+    DATE_ASC = 2,
+    DATE_DESC = 3,
+    ALL_DOCUMENT_TYPES = 0,
+    //Type 
+    BULLETIN_BOARD = 1,
+    PDF = 2,
+    DOC = 3,
+    ALLOWED_TYPE = [PDF, DOC, BULLETIN_BOARD],
+    REQUEST_STRING_FIELD = "requestString",
+    USET_AUTH_FIELD = "userAuth",
+    DOCTYPE_FIELD = "docType",
+    ORDER_BY_FIELD = "orderBy",
+    EXACT_FIELD = "exact",
+    DATE_FIELD = "date",
+    DATE_BEGIN = "begin",
+    DATE_END = "end",
+
+    //Ejs for query builder
+    ejs = require('../../helper/elastic');
+
 
 class SearchBuilder {
     constructor(requestParam, group_id, user_id) {
@@ -62,9 +56,40 @@ class SearchBuilder {
         return ejstest;
     }
 
+    //todo
+    dateFilter() {
+        var ejstest = ejs.BoolQuery()
+            .should([
+                ejs.TermsQuery('groups_ids', this.group_id),
+                ejs.TermQuery('created_by', this.user_id)
+            ]);
+        return ejstest;
+    }
+
+    typeFilter() {
+        if (this.reqBody[DOCTYPE_FIELD].constructor === Array) {
+            return ejs.TermsQuery('type', this.reqBody[DOCTYPE_FIELD]);
+        }
+        else {
+            return ejs.TermQuery('type', this.reqBody[DOCTYPE_FIELD]);
+        }
+    }
+
     filter() {
-        return ejs.
-            BoolQuery().must(this.userFilter())
+        let filters = [];
+        //Always user filter
+        filters.push(this.userFilter());
+
+        //Date 
+        if (this.reqBody.hasOwnProperty(DATE_FIELD) && this.reqBody.date.hasOwnProperty(DATE_BEGIN) && this.reqBody.date.hasOwnProperty(DATE_END)) {
+            filters.push(this.dateFilter());
+        }
+
+        //Doc type 
+        if (this.reqBody.hasOwnProperty(DOCTYPE_FIELD) && this.reqBody[DOCTYPE_FIELD] != ALL_DOCUMENT_TYPES) {
+            filters.push(this.typeFilter());
+        }
+        return ejs.BoolQuery().must(filters);
     }
 
     query() {
@@ -75,8 +100,7 @@ class SearchBuilder {
                 ejs.MatchQuery('attachment.name', this.requestParam[REQUEST_STRING_FIELD]),
                 ejs.MatchQuery('pinboard_label', this.requestParam[REQUEST_STRING_FIELD]),
                 ejs.MatchQuery('pin_content', this.requestParam[REQUEST_STRING_FIELD])
-            ])
-
+            ]);
     }
 
     //Set field to retrive and highlight
@@ -89,12 +113,26 @@ class SearchBuilder {
                 "pin_content",
                 "attachment.name"
             ])
-            .numberOfFragments(3)
+            .numberOfFragments(3);
+    }
+
+    //order can only be 'asc' or 'desc'
+    orderBy() {
+        if (this.reqBody[ORDER_BY_FIELD].constructor === Array) {
+            let sorts = [];
+            this.reqBody[ORDER_BY_FIELD].forEach(function (element) {
+                sorts.push(ejs.Sort(element.fieldName).order(element.order));
+            }, this);
+            return sorts;
+        } else {
+            return ejs.Sort(this.reqBody[ORDER_BY_FIELD].fieldName).order(this.reqBody[ORDER_BY_FIELD].order);
+        }
     }
 
     get search() {
-        var ejsJSON = ejs.Request()
+        var ejs = ejs.Request()
             //exclude sources
+            // try : source('','')
             .source(["pinboard_label",
                 "created_by",
                 "layout_label",
@@ -108,132 +146,18 @@ class SearchBuilder {
             .query(
             this.query()
             );
-            //because ejs don't supper filter in bool we do it ourself
-            ejsJSON.toJSON().query.bool.filter = this.filter();
-             ejsJSON.toJSON().query.bool.minimum_should_match = 1
-        return ejsJSON;
+
+        //OrderBy
+        if (this.reqBody.hasOwnProperty(ORDER_BY_FIELD) && this.reqBody[ORDER_BY_FIELD] != RELEVANCE) {
+            ejs.sort(this.orderBy());
+        }
+
+        //because ejs don't suport filter in bool we do it ourself
+        ejs.toJSON().query.bool.filter = this.filter();
+        ejs.toJSON().query.bool.minimum_should_match = 1;
+        return ejs;
     }
-
 }
-
-var elasticSearchBuilder = {
-
-    bodySearch: {},
-    //List of console log
-    consoleStatus: {},
-    //List of param for builder
-    buildParam: {},
-    querrySet: false,
-
-    publicObject: {
-        //private function
-        //Can only retrieved document in user group or created by
-
-        //parse buildParam  
-        search: function (reqBody) {
-            elasticSearchBuilder.buildParam = reqBody;
-            //Basic research 
-            if (reqBody.hasOwnProperty(REQUEST_STRING_FIELD) && reqBody.requestString !== "") {
-                console.log("Begin search ... ");
-                elasticSearchBuilder.bodySearch = elasticSearchBuilder.base();
-
-                //Date 
-                if (reqBody.hasOwnProperty(DATE_FIELD) && reqBody.date.hasOwnProperty(DATE_BEGIN) && reqBody.date.hasOwnProperty(DATE_END)) {
-                    elasticSearchBuilder.date();
-                } else {
-                    elasticSearchBuilder.consoleStatus.date = 'false';
-                }
-                //OrderBy 
-                if (reqBody.hasOwnProperty(ORDER_BY_FIELD) && reqBody.orderBy != RELEVANCE) {
-                    elasticSearchBuilder.orderBy();
-                } else {
-                    elasticSearchBuilder.consoleStatus.orderBy = 'false';
-                }
-                //Exact value 
-                if (reqBody.hasOwnProperty('exact') && reqBody.orderBy == EXACT_WORD) {
-                    elasticSearchBuilder.exact();
-                } else {
-                    elasticSearchBuilder.consoleStatus.exact = 'false';
-                }
-                //Doc type 
-                if (reqBody.hasOwnProperty('doctype') && reqBody.orderBy != ALL_DOCUMENT_TYPES) {
-                    elasticSearchBuilder.doctype();
-                } else {
-                    elasticSearchBuilder.consoleStatus.doctype = 'false';
-                }
-
-                //Normal 
-                if (!elasticSearchBuilder.querrySet) {
-                    elasticSearchBuilder.bodySearch.query(ejs.MatchQuery('attachment.content', elasticSearchBuilder.buildParam[REQUEST_STRING_FIELD]))
-                }
-                console.log(elasticSearchBuilder.consoleStatus);
-                return elasticSearchBuilder.bodySearch;
-            } else {
-                throw Error("No request string provided")
-            }
-        },
-    },
-
-
-    //Pertinance, alphabétique , date croissante , date decroissante
-    orderBy: function () {
-        //https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html
-        var orderByBuild = [];
-        //sort query
-        switch (buildParam.orderBy) {
-            //TODO
-            case EXACT_WORD:
-
-                break;
-            case DATE_ASC:
-                orderByBuild.push({
-                    "attachment.content._date": { "order": "asc" }
-                })
-                break;
-            case DATE_DESC:
-                orderByBuild.push({
-                    "attachment.content._date": { "order": "desc" }
-                })
-                break;
-            case ALPHABETICAL:
-                orderByBuild.push({
-                    ".content._name": { "order": "asc" }
-                })
-                break;
-
-            default:
-                break;
-        }
-        elasticSearchBuilder.objectBuild.sort = orderByBuild;
-    },
-
-    date: function () {
-        elasticSearchBuilder.bodySearch
-            .query(
-            ejs.FilteredQuery(
-                ejs.MatchQuery('attachment.content', elasticSearchBuilder.buildParam[REQUEST_STRING_FIELD]),
-                ejs.RangeFilter('insertDate')
-                    .gte(elasticSearchBuilder.buildParam[DATE_FIELD][DATE_BEGIN])
-                    .lte(elasticSearchBuilder.buildParam[DATE_FIELD][DATE_END])
-            )
-            )
-        elasticSearchBuilder.querrySet = true;
-    },
-
-    doctype: function () {
-        elasticSearchBuilder.objectBuild.filter = {
-            "term": {
-                "document_type": elasticSearchBuilder.buildParam.doctype
-            }
-        }
-    },
-
-    exact: function () {
-
-    },
-
-}
-
 
 module.exports = SearchBuilder;
 

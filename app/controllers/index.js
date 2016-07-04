@@ -75,44 +75,20 @@ router.post('/search', function (req, res, next) {
             // });
         }).catch(function (err) {
             res.send(err.message || err);
-        })
-
-    function filterOutput() {
-        filterCall = true;
-        var filterResult = {};
-        var index = 0;
-        for (node in elasticBody.hits.hits) {
-            var name = elasticBody.hits.hits[node]._source.attachment._name;
-            console.log(name);
-            if (in_array(userDocuments, name)) {
-                filterResult[index] = (elasticBody.hits.hits[node]);
-                index++;
-                console.log("add");
-            }
-        }
-        if (Object.keys(filterResult).length > 0) {
-            res.send(filterResult);
-        } else {
-            res.send({
-                error: "No filtered resultat found",
-                code: 1
-            });
-        }
-    }
-
+        });
 });
 
 router.post('/searchTest', function (req, res, next) {
     var querryString = req.body.requestString || "";
-    var userAuth = req.body.userAuth || 1;
+    var userId = req.body.userId || 1;
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
 
     //Get group from user
-    user.getGroupsForUser(userAuth)
+    user.getGroupsForUser(userId)
         .then(function (row) {
-            const sb = new SearchBuilder(req.body,row.array,userAuth);
+            const sb = new SearchBuilder(req.body,row.array,userId);
             console.log(sb);
             return elasticService.search(sb.search);       
         })
@@ -121,7 +97,7 @@ router.post('/searchTest', function (req, res, next) {
         })
         .catch(function (err) {
             res.send(err.message || err);
-        })
+        });
 });
 
 

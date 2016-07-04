@@ -8,8 +8,12 @@ const conf = require("../../config"),
 const elasticIndexBuilder = {
 
     createDocument: function (row) {
-        const base64file = utils.base64_encode("../" + row.path);
+        const base64file = utils.base64_encode(row.path);
         const fileSize = Buffer.byteLength(base64file);
+
+        if( fileSize > 104857600) {
+            return false;
+        }
         //id is set in url sent to elastic : http POST elastic/index/type/id
         const requestData = {
             // using the _indexed_chars parameter. -1 can be set to extract all text

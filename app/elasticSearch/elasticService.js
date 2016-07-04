@@ -25,6 +25,10 @@ const elasticService = {
         //! fileSize > 104857600      
         try {
             const requestData = elasticServiceBuilder.createDocument(row);
+            if(requestData === false ) {
+                //try remove indexed -1 ?
+                return Promise.reject("File " + row.label + " v:" +row.version_id +"too big");
+            }
             return client.create({
                 id: row.log_data_id,
                 index: indexName,

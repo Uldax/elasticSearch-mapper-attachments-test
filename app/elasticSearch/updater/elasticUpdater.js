@@ -101,10 +101,12 @@ class ElasticUpdater {
                 return this.sleep();
             }
             this.previousStateLength = this.state.length;
-            console.log("Numbers of failed :" + this.rejectResult.length + " / " + this.state.length);
-            this.rejectResult.forEach(function (element) {
-                console.log(element.e);
-            }, this);
+            if (this.state.length > 0) {
+                console.log("Numbers of failed :" + this.rejectResult.length + " / " + this.state.length);
+                this.rejectResult.forEach(function (element) {
+                    console.log(element.e);
+                }, this);
+            }
             setTimeout(that.executeUpdate.bind(this), that.timeBetweenUpdate);
             //insert the scope in 'then' : this now equal ElasticUpdater instead of promise
         }.bind(this))
@@ -113,12 +115,14 @@ class ElasticUpdater {
             });
     }
 
+    //remove the listener on postgresql
     wakeUp() {
         console.log("wake up");
         updateModel.unlisten();
         this.executeUpdate();
     }
 
+    //Set listener on postgresql to wake up if insert
     sleep() {
         console.log("sleep");
         updateModel.listenChannel("update", this.wakeUp.bind(this));
@@ -142,7 +146,6 @@ class ElasticUpdater {
                 return nextAction.promise;
             });
         }, p);
-
     }
 }
 

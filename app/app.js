@@ -1,16 +1,17 @@
-var express = require('express');
-var path = require('path');
+const express = require('express'),
+  path = require('path'),
 
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var bodyParser = require('body-parser');
-var ipfilter = require('express-ipfilter');
-var routes = require('./controllers/index');
-var ElasticUpdater = require('./elasticSearch/updater/elasticUpdater');
-var elasticImporter = require('./elasticSearch/elasticImporter');
-var testM = require('./models/test');
-var util = require('util');
-var app = express();
+  favicon = require('serve-favicon'),
+  logger = require('morgan'),
+  bodyParser = require('body-parser'),
+  ipfilter = require('express-ipfilter'),
+  routes = require('./controllers/index'),
+  ElasticUpdater = require('./elasticSearch/updater/elasticUpdater'),
+  elasticImporter = require('./elasticSearch/elasticImporter'),
+  modelTest = require('./models/test'),
+  util = require('util'),
+  service = require('./elasticSearch/elasticService'),
+  app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -69,15 +70,33 @@ app.use(function (err, req, res, next) {
   });
 });
 
-
 //Set up elastic updater
 //Warning may be heavy
 if (process.argv[2] === "import") {
   console.log("Import Process ..");
   elasticImporter.start();
-}
-else {
+} else if (process.argv[2] === "crawl") {
+  modelTest.crawlFoler("../indexedDocuments")
+  .then(function(nbr){
+    console.log(nbr + "doc updated");
+  });
+  //Remove from prod
+} else if (process.argv[2] === "restart") {
+  modelTest.restart_db().then(function (mes) {
+    console.log(mes);
+    service.createIndex()
+      .then(function () {
+        console.log("clean");
+      })
+      .catch(function (err) {
+        console.log(err);
+      });
+  })
 
+    .catch(function (err) {
+      console.log(err);
+    })
+} else {
   //singleton : test
   let eu = new ElasticUpdater();
   console.log(eu.time);
@@ -86,7 +105,6 @@ else {
     console.log(eu.time);
   }, 4000);
   eu.executeUpdate();
-  //testM.crawlFoler("../indexedDocuments");
 }
 
 

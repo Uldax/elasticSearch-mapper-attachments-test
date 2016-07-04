@@ -1,17 +1,18 @@
 "use strict";
-var conf = require('../config.js');
-var connectionString = conf.db.pgsql;
-var pgp = require('pg-promise')();
-var update = require('./update');
-var document = require('./document');
-var pin = require('./pin');
-var utils = require('../helper/utils');
+const conf = require('../config.js'),
+    connectionString = conf.db.pgsql,
+    pgp = require('pg-promise')(),
+    update = require('./update'),
+    document = require('./document'),
+    pin = require('./pin'),
+    utils = require('../helper/utils'),
+    //Class for utils function
+    fs = require('fs'),
+    db = pgp(connectionString);
 
 
-var db = pgp(connectionString);
 
-
-var testModel = {
+const testModel = {
     removeTrigger: function () {
         return new Promise(function (resolve, reject) {
             db.task(function (t) {
@@ -33,7 +34,7 @@ var testModel = {
                 .catch(function (error) {
                     reject(error.message || error);
                 });
-        })
+        });
     },
 
     setTrigger: function () {
@@ -93,7 +94,7 @@ var testModel = {
                 .catch(function (error) {
                     reject(error.message || error);
                 });
-        })
+        });
     },
 
     clean_db: function () {
@@ -110,25 +111,25 @@ var testModel = {
                 })
                 .catch(function (err) {
                     reject(err.message || err);
-                })
-        })
+                });
+        });
     },
 
     restart_db: function () {
         return testModel.removeTrigger()
             .then(function (mess) {
-                return testModel.clean_db()
+                return testModel.clean_db();
             })
             .then(function () {
-                return testModel.setTrigger()
+                return testModel.setTrigger();
             })
             .catch(function (err) {
                 throw new Error(err.message || err);
-            })
+            });
     },
 
     insertLayout: function () {
-        return db.one("INSERT INTO pinboard.layout(label, width, height, user_id) VALUES ('layoutTest', 200, 200, 1) RETURNING layout_id")
+        return db.one("INSERT INTO pinboard.layout(label, width, height, user_id) VALUES ('layoutTest', 200, 200, 1) RETURNING layout_id");
     },
 
     updateLayout: function (layout_id, new_label) {
@@ -153,17 +154,26 @@ var testModel = {
 
     //First document insert
     insertFileInFolder: function (folder_name, file_name, file_path) {
-
         return db.one("SELECT folder_id FROM file.folder WHERE label = $1", folder_name)
             .then(function (row) {
                 var folder_id = row.folder_id;
-                return db.one("INSERT INTO file.file (label, folder_id, user_id) VALUES ($1,$2, 1) RETURNING file_id;", [file_name, folder_id])
+                return db.one("INSERT INTO file.file (label, folder_id, user_id) VALUES ($1,$2, 1) RETURNING file_id;", [file_name, folder_id]);
             }).then(function (row) {
                 var file_id = row.file_id;
                 return testModel.insertFileVersion(file_id, file_path);
             })
-            .catch(utils.onError)
+            .catch(utils.onError);
     },
+
+    issetOrInsertFolder: function (folder_name) {
+        return db.one("SELECT folder_id FROM file.folder WHERE label = $1", folder_name)
+            .then(function (row) {
+                var folder_id = row.folder_id;
+            }).catch(function (err) {
+                return db.one("INSERT INTO file.folder (label, user_id) VALUES ($1, 1);", folder_name);
+            });
+    },
+
 
     //Not used alone
     //Second for document update
@@ -177,8 +187,8 @@ var testModel = {
             db.one("SELECT file.file_id FROM file.file WHERE label = $1", [file_name]).then(function (row) {
                 var file_id = row.file_id;
                 resolve(testModel.insertFileVersion(file_id, file_path));
-            }).catch(utils.onError)
-        })
+            }).catch(utils.onError);
+        });
     },
 
     insertFolder: function (folder_name) {
@@ -202,7 +212,7 @@ var testModel = {
                 .catch(function (error) {
                     reject(error.message || error);
                 });
-        })
+        });
 
     },
 
@@ -224,7 +234,7 @@ var testModel = {
                 .catch(function (error) {
                     reject(error.message || error);
                 });
-        })
+        });
     },
 
     getVersionIdByFileLabel: function (file_name) {
@@ -232,22 +242,71 @@ var testModel = {
             "ON file.version.file_id = file.file.file_id WHERE file.label = $1", [file_name]);
     },
 
-    //test for many document
-    crawlFoler: function (folder) {
-        var promiseArray =[];
-        utils.readFolder(folder, function (filename) {
-            promiseArray.push(testModel.insertFileInFolder("root",filename,folder+"/"+filename));
-            Promise.all(promiseArray)
-            .then(function(){
-                console.log("ok for crawl");
-            })
-            .catch(function(err){
-                console.log(err);
-            })
-        }, utils.onError)
-    }
 
-}
+
+    //test for many document
+    crawlFoler: function (folder, multiplictor) {
+        let promiseArray = [];
+        let multiplictorArray = [];
+        var documentNumber = 0;
+
+        var insertFile = function (filename) {
+            let path = folder + "/" + filename;
+            if (utils.getExt(filename)) {
+                promiseArray.push(testModel.insertFileInFolder("root", filename, path));
+            }
+        };
+
+        return new Promise(function (resolve, reject) {
+            var start = 0;
+            var totalSizeMb = 0;
+            testModel.insertFolder("root")
+                .then(function () {
+                    start = new Date().getTime();
+                    for (let i = 0; i < (multiplictor || 20); i++) {
+                        multiplictorArray.push(
+                            new Promise(function (resolve, reject) {
+                                fs.readdir(folder, function (err, filenames) {
+                                    if (err) {
+                                        console.log(err.message || err);
+                                        return;
+                                    }
+                                    filenames.forEach(function (filename) {
+                                        let path = folder + "/" + filename;
+                                        if (utils.getExt(filename)) {
+                                            var stats = fs.statSync(path);
+                                            var fileSizeInBytes = stats["size"];
+                                            //Convert the file size to megabytes (optional)
+                                            var fileSizeInMegabytes = fileSizeInBytes / 1000000.0;
+                                            totalSizeMb += fileSizeInMegabytes;
+                                            promiseArray.push(testModel.insertFileInFolder("root", filename, path));
+                                        }
+                                    });
+                                    resolve("finish");
+                                });
+                            }));
+                    }
+                    return Promise.all(multiplictorArray);
+                })
+                .then(function () {
+                    documentNumber = promiseArray.length;
+                    console.log("Index " + documentNumber + " file ...");
+                    return Promise.all(promiseArray);
+                })
+                .then(function () {
+                    var end = new Date().getTime();
+                    var time = end - start;
+                    console.log('Execution time: ' + time);
+                    var times = time/100;
+                    console.log(totalSizeMb + " Mo in " + times +" s" );
+                    console.log("Debit : "  +totalSizeMb/times +" Mo/s");
+                })
+                .catch(function (err) {
+                    console.log(err.message || err);
+                });
+        });
+    }
+};
 
 
 module.exports = testModel;

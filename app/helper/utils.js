@@ -1,13 +1,13 @@
 //Class for utils function
-var fs = require('fs');
+const fs = require('fs');
 
 
-var utils = {
+const utils = {
     extToType: {
-        ".doc": "doc"
-        , ".docx": "doc"
-        , ".pdf": "pdf"
-        , ".pptx": "ppt"
+        ".doc": "doc",
+        ".docx": "doc",
+        ".pdf": "pdf",
+        ".pptx": "ppt"
     },
 
     // function to encode file data to base64 encoded string
@@ -30,10 +30,10 @@ var utils = {
         var mm = today.getMonth() + 1; //January is 0!
         var yyyy = today.getFullYear();
         if (dd < 10) {
-            dd = '0' + dd
+            dd = '0' + dd;
         }
         if (mm < 10) {
-            mm = '0' + mm
+            mm = '0' + mm;
         }
         //today = yyyy + '/' + mm + '/' + dd;
         today = dd + '/' + mm + '/' + yyyy;
@@ -57,7 +57,7 @@ var utils = {
     //Get extension from string
     getExt: function (path) {
         var i = path.lastIndexOf('.');
-        return (i < 0) ? '' : path.substr(i);
+        return (i < 0) ? false : path.substr(i);
     },
 
     //get elastic type associate to extension 
@@ -65,7 +65,7 @@ var utils = {
         var ext = this.getExt(path);
         if (ext !== "" && this.extToType.hasOwnProperty(ext)) {
             return this.extToType[ext];
-        } else return "unknown"
+        } else return "unknown";
     },
 
     isFunction: function (functionToCheck) {
@@ -75,8 +75,6 @@ var utils = {
 
     //Promise catch
     onError: function (err) {
-        console.log("throwing error");
-        //return reject(err.message || err);
         throw new Error(err.message || err);
     },
 
