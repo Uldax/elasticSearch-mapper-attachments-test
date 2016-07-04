@@ -1,9 +1,6 @@
 "use strict";
 
-var conf = require('../config.js');
-var connectionString = conf.db.pgsql;
-var pgp = require('pg-promise')();
-var db = pgp(connectionString);
+const db = require('../helper/db.js').db;
 var sco; // shared connection object
 
 var updateModel = {

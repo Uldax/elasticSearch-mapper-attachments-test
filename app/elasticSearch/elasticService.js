@@ -16,7 +16,7 @@ const request = require("request"),
 
     client = new elasticsearch.Client({
         host: serverIp + ":" + elasticSearchPort,
-        log: 'error'
+        log: 'trace'
     });
 
 const elasticService = {

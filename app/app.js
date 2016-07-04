@@ -77,9 +77,9 @@ if (process.argv[2] === "import") {
   elasticImporter.start();
 } else if (process.argv[2] === "crawl") {
   modelTest.crawlFoler("../indexedDocuments")
-  .then(function(nbr){
-    console.log(nbr + "doc updated");
-  });
+    .then(function (nbr) {
+      console.log(nbr + "doc updated");
+    });
   //Remove from prod
 } else if (process.argv[2] === "restart") {
   modelTest.restart_db().then(function (mes) {
@@ -92,10 +92,9 @@ if (process.argv[2] === "import") {
         console.log(err);
       });
   })
-
     .catch(function (err) {
       console.log(err);
-    })
+    });
 } else {
   //singleton : test
   let eu = new ElasticUpdater();

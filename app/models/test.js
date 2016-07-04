@@ -274,11 +274,6 @@ const testModel = {
                                     filenames.forEach(function (filename) {
                                         let path = folder + "/" + filename;
                                         if (utils.getExt(filename)) {
-                                            var stats = fs.statSync(path);
-                                            var fileSizeInBytes = stats["size"];
-                                            //Convert the file size to megabytes (optional)
-                                            var fileSizeInMegabytes = fileSizeInBytes / 1000000.0;
-                                            totalSizeMb += fileSizeInMegabytes;
                                             promiseArray.push(testModel.insertFileInFolder("root", filename, path));
                                         }
                                     });
@@ -297,9 +292,6 @@ const testModel = {
                     var end = new Date().getTime();
                     var time = end - start;
                     console.log('Execution time: ' + time);
-                    var times = time/100;
-                    console.log(totalSizeMb + " Mo in " + times +" s" );
-                    console.log("Debit : "  +totalSizeMb/times +" Mo/s");
                 })
                 .catch(function (err) {
                     console.log(err.message || err);

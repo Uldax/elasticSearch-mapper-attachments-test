@@ -24,7 +24,6 @@ var pinModel = {
         return db.one("SELECT label,log_data_id, pin_id " +
             "FROM pinboard.pin " +
             "WHERE pinboard.pin.log_data_id = $1 ", log_data_id);
-
     },
 
     //vote pin and log_data_id from id to update 
