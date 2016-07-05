@@ -7,10 +7,11 @@ const conf = require("../../config"),
 
 const elasticIndexBuilder = {
 
-    createDocument: function (row) {
+//Group_ids optional
+    createDocument: function (row, group_ids) {
         const base64file = utils.base64_encode(row.path);
         const fileSize = Buffer.byteLength(base64file);
-
+        const ids = group_ids || [];
         if( fileSize > 104857600) {
             return false;
         }
@@ -29,7 +30,7 @@ const elasticIndexBuilder = {
             "document_id": row.file_id,
             "version_id": row.version_id,
             //if not set , add values instead of add to array
-            "groups_ids": [],
+            "groups_ids": ids,
             "created_by": row.user_id
         };
         return requestData;
@@ -49,7 +50,7 @@ const elasticIndexBuilder = {
 
     //Files are in config/script under elasticSearch folder
     addGroupToFile: function (group_id, document_id) {
-        var requestData = {
+        const requestData = {
             "query": {
                 "term": {
                     "document_id": document_id
@@ -84,20 +85,21 @@ const elasticIndexBuilder = {
         };
     },
 
-    createPin: function (row, groupIds) {
-        var requestData = {
-            "layout_label": row.label_layout,
+    createPin: function (row) {
+        let ids = row.group_ids || [];
+        let vote = row.vote || 0;
+
+        const requestData = {
+            "layout_label": row.layout_label,
             "pin_content": row.pin_label,
             "pinboard_label": row.pinboard_label,
-            "pin_vote": 0,
+            "pin_vote": vote,
             "insertDate": row.registration,
             "layout_id": row.layout_id,
             "pin_id": row.pin_id,
             "pinboard_id": row.pinboard_id,
-            "groups_ids": [],
+            "groups_ids": ids,
             "created_by": row.user_id
-
-
         };
         return requestData;
     },
@@ -182,27 +184,16 @@ const elasticIndexBuilder = {
 
 
     //Function which returns the JSON to index pins
-    bulkPin: function (rows) {
+    createPinBulk: function (rows) {
         var myJson = [];
-        for (var row = 0; row < rows.length; row++) {
-            var layout_label_value = rows[row].label_layout;
-            var pin_id_value = rows[row].pin_id;
-            var pin_label_value = rows[row].label_pin;
-            var pinboard_label_value = rows[row].label_pinboard;
-            var pin_vote_value = rows[row].vote;
-            var log_data_id_value = rows[row].log_data_id;
 
-            myJson.push(
-                { index: { _index: indexName, _type: 'pin', _id: log_data_id_value } },
-                {
-                    layout_label: layout_label_value,
-                    pin_label: pin_label_value,
-                    pinboard_label: pinboard_label_value,
-                    pin_vote: pin_vote_value,
-                    pin_id: pin_id_value
+        for (let row in rows) {
+                    if (rows.hasOwnProperty(row)) {
+                        let element = rows[row];
+                        myJson.push({ "create" : { "_index" : "opus", "_type" : "pin", "_id" : element.log_data_id } } ,this.createPin(element, element.group_ids));
+                    }
                 }
-            );
-        }
+    
         return myJson;
     },
 

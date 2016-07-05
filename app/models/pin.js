@@ -9,8 +9,9 @@ var pinModel = {
     getPinInfoById: function (log_data_id) {
         //TODO create view
         //can't have pin vote when pin create so remove from this request
-        return db.one("SELECT pin.pin_id,pin.log_data_id,pinboard.pinboard.pinboard_id,layout.layout_id,pin.user_id, pin.registration, " +
-            "pinboard.layout.label AS label_layout, " +
+        return db.one("SELECT pin.pin_id,pin.log_data_id,pinboard.pinboard.pinboard_id, " +
+            "layout.layout_id, pin.user_id, pin.registration, " +
+            "pinboard.layout.label AS layout_label, " +
             "pinboard.pinboard.label AS pinboard_label, " +
             "pinboard.pin.label AS pin_label " +
             "FROM pinboard.layout " +
@@ -18,6 +19,21 @@ var pinModel = {
             "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
             "WHERE pinboard.pin.log_data_id = $1 ", log_data_id);
     },
+
+    //For th BULK
+    getPinInfoWithGroup: function () {
+        return db.any("SELECT pinboard.pin.pin_id, pinboard.layout.label AS layout_label, " +
+            "pin.user_id, pin.registration, layout.layout_id, " +
+            "pinboard.pinboard.label AS pinboard_label, " +
+            "pinboard.pin.label AS pin_label, " +
+            "pinboard.vote_pin.vote, pinboard.pin.log_data_id, pinboard.pinboard.pinboard_id, " +
+            "array(SELECT group_id FROM pinboard.pinboard_group WHERE pinboard_group.pinboard_id = pinboard.pinboard_id) AS group_ids " +
+            "FROM pinboard.layout " +
+            "INNER JOIN pinboard.pinboard ON pinboard.layout.layout_id = pinboard.pinboard.layout_id " +
+            "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
+            "INNER JOIN pinboard.vote_pin ON pinboard.pin.pin_id = pinboard.vote_pin.pin_id;");
+    },
+
 
     //for pin update 
     getPinUpdateInfoById: function (log_data_id) {
@@ -59,14 +75,7 @@ var pinModel = {
         return db.one("SELECT * FROM pin WHERE pin_id = $1", pin_id);
     },
 
-    getAllPinInfo: function () {
-        return db.any("SELECT pinboard.pin.pin_id, pinboard.layout.label AS label_layout, pinboard.pinboard.label AS label_Pinboard, " +
-            "pinboard.pin.label AS label_pin, pinboard.vote_pin.vote, pinboard.pin.log_data_id " +
-            "FROM pinboard.layout " +
-            "INNER JOIN pinboard.pinboard ON pinboard.layout.layout_id = pinboard.pinboard.layout_id " +
-            "INNER JOIN pinboard.pin ON pinboard.pinboard.pinboard_id = pinboard.pin.pinboard_id " +
-            "INNER JOIN pinboard.vote_pin ON pinboard.pin.pin_id = pinboard.vote_pin.pin_id;");
-    },
+
 };
 
 

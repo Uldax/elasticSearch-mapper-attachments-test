@@ -16,18 +16,18 @@ const request = require("request"),
 
     client = new elasticsearch.Client({
         host: serverIp + ":" + elasticSearchPort,
-        log: 'trace'
+        log: 'error'
     });
 
 const elasticService = {
     /*************** DOCUMENT  **************** */
-    createDocument: function (row) {
+    createDocument: function (row, group_ids) {
         //! fileSize > 104857600      
         try {
-            const requestData = elasticServiceBuilder.createDocument(row);
-            if(requestData === false ) {
+            const requestData = elasticServiceBuilder.createDocument(row, group_ids);
+            if (requestData === false) {
                 //try remove indexed -1 ?
-                return Promise.reject("File " + row.label + " v:" +row.version_id +"too big");
+                return Promise.reject("File " + row.label + " v:" + row.version_id + "too big");
             }
             return client.create({
                 id: row.log_data_id,
@@ -148,21 +148,10 @@ const elasticService = {
     },
 
     /*************** IMPORT  **************** */
-    bulkPin: function (rows) {
-        return new Promise(function (resolve, reject) {
-            const requestData = elasticServiceBuilder.bulkPin(rows);
-            if (requestData) {
-                client.bulk({
-                    body: requestData
-                }).then(function (resp) {
-                    resolve("All pinboards indexed");
-                }, function (err) {
-                    reject(err.message || err);
-                });
-            }
-            else {
-                reject("No JSON for bulk");
-            }
+    createPinBulk: function (rows) {
+        const requestData = elasticServiceBuilder.createPinBulk(rows);
+        return client.bulk({
+            body: requestData
         });
     },
 

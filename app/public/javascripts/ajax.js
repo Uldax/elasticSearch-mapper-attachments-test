@@ -66,15 +66,11 @@ function postCall(evt) {
             end: $("#end")[0].value
         }
     };
-
-    console.log(myObject);
-
     $.ajax({
         url: '/search',
         type: 'POST',
         data: myObject,
         complete: function (resultat, statut) {
-            console.log(resultat);
             readAndDisplayData(resultat);
         },
 
@@ -114,19 +110,26 @@ function readAndDisplayData(data) {
     $(".noResult").remove();
     $("#resultPanel").hide();
     var myObject = data;
+    console.log(data);
     var nom = "";
     var text = "";
-    if (myObject.hasOwnProperty("error")) {
+    if (myObject.error.arguments != null) {
         console.log(myObject.error);
         noResult(myObject.error);
         $("#resultPanel").slideDown(500);
     }
     else {
-        for (node in myObject.hits.hits) {
-            nom = myObject.hits.hits[node]._source.attachment._name;
-            text = myObject.hits.hits[node].highlight['attachment.content'][0];
-            console.log(myObject.hits.hits[node]._source.attachment._name);
-            createItem(nom, text);
+        for (node in myObject.responseJSON.hits.hits) {
+            if (myObject.responseJSON.hits.hits[node]._type == "document") {
+                nom = myObject.responseJSON.hits.hits[node]._source.attachment._name;
+                //text = myObject.responseJSON.hits.hits[node].highlight['attachment.content'][0];
+                console.log(myObject.responseJSON.hits.hits[node]._source.attachment._name);
+                createItem(nom, "");
+            }
+            else {
+                nom = myObject.responseJSON.hits.hits[node]._source.pinboard_label;
+                createItem(nom, "");
+            }
         }
         $("#resultPanel").slideDown(500);
     }
@@ -168,6 +171,8 @@ function createItem(nom, text) {
     resultImage.append(imgResult);
     result.append(resultImage);
     result.append(resultText);
+
+    
     cb.before(result);
 
 

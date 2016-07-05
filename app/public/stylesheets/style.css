@@ -102,6 +102,20 @@ body{
     padding-left: 80px;
 }
 
+#resultPanel2{
+    width : 1200px;
+    margin : auto;
+    margin-top: 10px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: black;
+    border-radius: 10px;
+    background-color: white;
+    position: relative;
+    text-align: center;
+    padding-left: 80px;
+}
+
 .result{ 
     float: left;
     width: 210px;

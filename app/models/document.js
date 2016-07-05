@@ -14,7 +14,7 @@ function onError(err) {
 var documentModel = {
     //For document update
     getFilesInfo: function () {
-        return db.any('SELECT file.file.file_id, file.file.label, file.version.path, file.version.version_id, file.version.log_data_id FROM file.file ' +
+        return db.any('SELECT file.file.file_id, file.file.label, file.version.path, file.version.version_id, file.version.log_data_id, file.version.registration, file.version.user_id FROM file.file ' +
             'INNER JOIN file.version ON file.file.file_id = file.version.file_id');
     },
 
@@ -25,14 +25,18 @@ var documentModel = {
         "INNER JOIN file.file ON file.version.file_id = file.file.file_id WHERE version.log_data_id = $1", log_data_id);
     },
 
-    // //action file
-    // getGroupForFile: function (file_id) {
-    //     return db.any('SELECT group_id FROM file.file_group WHERE file_id = $1', file_id);
-    // },
+    //action file
+    getGroupForFile: function (file_id) {
+        return db.one('SELECT array (SELECT group_id FROM file.file_group WHERE file_id = $1)', file_id);
+    },
 
     //actionFile_Group
     getFile_GroupByLogData: function (log_data_id) {
         return db.one("SELECT file_id,group_id FROM file.file_group WHERE log_data_id = $1", [log_data_id]);
+    },
+
+    getAllFile_Group : function () {
+        return db.any("SELECT file_id,group_id FROM file.file_group");
     }
 
 };

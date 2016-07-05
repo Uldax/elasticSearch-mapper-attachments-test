@@ -6,9 +6,9 @@ Param{
     userId : string
 
     //Facultatif
-    exact : (true || empty) or false
-    doctype : field or array { field }
-    orderBy : object or array { fieldName : string , order : (asc || )}
+    exact : true or (false || empty)
+    doctype : field or array [field]  
+    orderBy : object or array [{ fieldName : string , order : (asc || desc)}]
     date : object { begin, end } || object { before } || object { after}
 }
 */
