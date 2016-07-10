@@ -88,7 +88,8 @@ router.post('/searchTest', function (req, res, next) {
     //Get group from user
     user.getGroupsForUser(userId)
         .then(function (row) {
-            const sb = new SearchBuilder(req.body,row.array,userId);
+            const resultSize = 8;
+            const sb = new SearchBuilder(req.body,row.array,userId,resultSize);
             console.log(sb);
             return elasticService.search(sb.search);       
         })

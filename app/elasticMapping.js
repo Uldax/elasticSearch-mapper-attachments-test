@@ -44,7 +44,6 @@ var mapping = {
                 "groups_ids": {
                     "type": "long"
                 },
-                //If document doesn't have group
                 "created_by" : {
                     "type": "long"
                 }

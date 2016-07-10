@@ -3,7 +3,8 @@
 /*
 Param{
     requestString : string
-    userId : string
+    userId : int
+    page : int
 
     //Facultatif
     exact : true or (false || empty)
@@ -41,10 +42,12 @@ const ALL_RESULTS = 0,
     ejs = require('../../helper/elastic.js');
 
 class SearchBuilder {
-    constructor(requestParam, group_id, user_id) {
+    constructor(requestParam, group_id, user_id, size) {
         this.requestParam = requestParam;
         this.group_id = group_id;
         this.user_id = user_id;
+        this.size = size;
+        this.fromValue = (requestParam.page > 1 ) ? ((requestParam.page - 1) * size) : 0
         this.fieldToSearch = [
             'attachment.content',
             'attachment.name',
@@ -146,6 +149,8 @@ class SearchBuilder {
 
     get search() {
         var ejsBody = ejs.Request()
+            .from(this.fromValue)
+            .size(this.size)
             //exclude sources
             .source("*", ["attachment._content"])
             .highlight(this.highlight())
