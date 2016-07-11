@@ -214,7 +214,6 @@ class IndexAction {
             pinModel.getPinboardByLogdata(log_data_id)
                 .then(function (row) {
                     if (op == "U") {
-                        console.log("pinboard");
                         return elasticService.updatePinwithPinBoard(row.label, row.pinboard_id);
                     } else {
                         throw new Error("Unknow op for pinboard");

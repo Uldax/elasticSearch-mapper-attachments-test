@@ -39,20 +39,24 @@ const ALL_RESULTS = 0,
     DATE_AFTER = "after",
 
     //Ejs for query builder
-    ejs = require('../../helper/elastic.js');
+    ejs = require('../../helper/elastic.js'),
+    //Elastic value
+    TIE_BREAKER = 0.3;
 
 class SearchBuilder {
     constructor(requestParam, group_id, user_id, size) {
+        //Todo verification
         this.requestParam = requestParam;
         this.group_id = group_id;
         this.user_id = user_id;
         this.size = size;
-        this.fromValue = (requestParam.page > 1 ) ? ((requestParam.page - 1) * size) : 0
+        this.fromValue = (requestParam.page > 1) ? ((requestParam.page - 1) * size) : 0
         this.fieldToSearch = [
             'attachment.content',
             'attachment.name',
             'pinboard_label',
-            'pin_content'
+            'pin_content',
+            'layout_label',
         ];
         console.log(requestParam);
     }
@@ -70,7 +74,7 @@ class SearchBuilder {
     dateFilter() {
         let requestDate = this.requestParam[DATE_FIELD];
         let range = {
-            "insertDate" : {}
+            "insertDate": {}
         };
 
         if (requestDate.hasOwnProperty(DATE_BEGIN)) {
@@ -83,8 +87,8 @@ class SearchBuilder {
         } else {
             console.log("SearchBuilder : erreur in date");
         }
-        return {range};
-        
+        return { range };
+
     }
 
     typeFilter() {
@@ -107,7 +111,7 @@ class SearchBuilder {
         }
 
         let ejsFilter = ejs.BoolQuery().must(filters);
-        
+
         //Not supported by ejs : Date 
         if (this.requestParam.hasOwnProperty(DATE_FIELD) &&
             ((this.requestParam[DATE_FIELD].hasOwnProperty(DATE_BEGIN) && this.requestParam[DATE_FIELD].hasOwnProperty(DATE_END)) ||
@@ -120,11 +124,37 @@ class SearchBuilder {
 
     }
 
+    suggest() {
+        let suggestObject = {
+                "text": this.requestParam[REQUEST_STRING_FIELD],
+                "simple_phrase": {
+                    "phrase": {
+                        "size": 1,
+                        "real_word_error_likelihood": 0.95,
+                        "max_errors": 0.5,
+                        "gram_size": 2
+                    }
+                }
+            
+        }
+        for (let i = 0; i < this.fieldToSearch.length; i++) {
+            let element = this.fieldToSearch[i];
+            let propertyName = 'my-suggest-' + i;
+            suggestObject[propertyName] = {
+                "field" : element,
+            }
+        }
+        console.log(suggestObject);
+        return suggestObject;
+    }
+
     query() {
         //fieldToSearch
         return ejs
             .BoolQuery()
-            .should(ejs.MultiMatchQuery(this.fieldToSearch, this.requestParam[REQUEST_STRING_FIELD]));
+            .should(ejs.MultiMatchQuery(this.fieldToSearch, this.requestParam[REQUEST_STRING_FIELD])
+                .tieBreaker(TIE_BREAKER)
+            );
     }
 
     //Set field to retrive and highlight
@@ -163,9 +193,11 @@ class SearchBuilder {
             ejsBody.toJSON().sort = this.orderBy();
         }
 
-        //because ejs don't suport filter in bool we do it ourself
+        //because ejs don't suport filter in bool, so we do it ourself
         ejsBody.toJSON().query.bool.filter = this.filter();
         ejsBody.toJSON().query.bool.minimum_should_match = 1;
+        //ejs doesn't support complexe phrase filter too
+        ejsBody.toJSON().suggest = this.suggest();
         return ejsBody;
     }
 }

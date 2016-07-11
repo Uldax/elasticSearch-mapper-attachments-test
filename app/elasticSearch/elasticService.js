@@ -5,7 +5,8 @@ const request = require("request"),
     elasticServiceBuilder = require("./builder/indexBuilder"),
     conf = require("../config"),
     elasticsearch = require('elasticsearch'),
-    mapping = require('../elasticMapping'),
+    elasticStructure = require('../elasticStructure'),
+    logger = require('../helper/logger'),
 
     //Conf parameters
     elasticSearchPort = conf.elastic.port,
@@ -16,7 +17,7 @@ const request = require("request"),
 
     client = new elasticsearch.Client({
         host: serverIp + ":" + elasticSearchPort,
-        log: 'error'
+        log: conf.elastic.logLevel
     });
 
 const elasticService = {
@@ -277,8 +278,40 @@ const elasticService = {
         });
     },
 
+    createIndex: function () {e
+        return new Promise(function (resolve, reject) {
+            const options = {
+                method: 'POST',
+                url: baseURL + "/opus",
+                json: elasticStructure ,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                }
+            };
+            request(options, function (err, response, body) {
+                if (!err) {
+                    switch (response.statusCode) {
+                        //EveryThing works
+                        case 200:
+                            //TODO handle 
+                            if ((typeof body !== undefined) && body.acknowledged) {
+                               resolve();
+                            }
+                            break;
+                        default:
+                            console.log(body);
+                            reject(response.statusCode);
+                            break;
+                    }
+                } else {
+                    reject(err);
+                }
+            });
+        });
+    },
+
     //Create first index and mapping for elastic
-    createIndex: function (indexName) {
+    buildElastic: function () {
         //Allow use to do the promise one after the other
         return client.indices.exists({ index: "opus" })
             .then(function (exist) {
@@ -287,14 +320,9 @@ const elasticService = {
                 } else return Promise.resolve();
             })
             .then(function () {
-                return client.indices.create({ index: "opus" });
+                return elasticService.createIndex();
             })
-            .then(function () {
-                return client.indices.putMapping({ index: "opus", type: 'document', body: mapping.documentMapping });
-            })
-            .then(function () {
-                return client.indices.putMapping({ index: "opus", type: 'pin', body: mapping.pinMapping });
-            })
+
             .catch(function (err) {
                 throw new Error(err.message || err);
             });

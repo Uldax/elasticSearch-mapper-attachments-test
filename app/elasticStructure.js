@@ -1,5 +1,6 @@
-var mapping = {
-    documentMapping: {
+var elasticStructure = {
+
+    "mappings": {
         "document": {
             "properties": {
                 "attachment": {
@@ -8,6 +9,7 @@ var mapping = {
                     "fields": {
                         "content": {
                             "type": "string",
+                            //For highlight
                             "term_vector": "with_positions_offsets",
                             "store": true
                         },
@@ -44,14 +46,11 @@ var mapping = {
                 "groups_ids": {
                     "type": "long"
                 },
-                "created_by" : {
+                "created_by": {
                     "type": "long"
                 }
             }
-        }
-    },
-
-    pinMapping: {
+        },
         "pin": {
             "properties": {
                 "layout_label": {
@@ -82,17 +81,62 @@ var mapping = {
                 "layout_id": {
                     "type": "long"
                 },
-                 //If pin doesn't have group
-                "created_by" : {
+                //If pin doesn't have group
+                "created_by": {
                     "type": "long"
                 },
-                 "insertDate": {
+                "insertDate": {
                     "type": "date"
-                }
+                },
+               "document_type": {
+                    "type": "string"
+                },
 
             }
         }
+    },
+
+    "settings": {
+        "analysis": {
+            "filter": {
+                "nGram_filter": {
+                    "type": "nGram",
+                    "min_gram": 2,
+                    "max_gram": 20,
+                    "token_chars": [
+                        "letter",
+                        "digit",
+                        "punctuation",
+                        "symbol"
+                    ]
+                }
+            },
+            "analyzer": {
+                //Same as withspace and add ngram filter
+                "nGram_analyzer": {
+                    "type": "custom",
+                    "tokenizer": "whitespace",
+                    "filter": [
+                        "lowercase",
+                        "asciifolding",
+                        "nGram_filter"
+                    ]
+                },
+                //splits text on whitespace, 
+                "whitespace_analyzer": {
+                    "type": "custom",
+                    "tokenizer": "whitespace",
+                    //normalizes all the tokens to lower-case
+                    //cleans up non-standard characters 
+                    "filter": [
+                        "lowercase",
+                        "asciifolding"
+                    ]
+                }
+            }
+        }
     }
+
 };
 
-module.exports = mapping;
+module.exports = elasticStructure;

@@ -85,7 +85,7 @@ if (process.argv[2] === "import") {
 } else if (process.argv[2] === "restart") {
   modelTest.restart_db().then(function (mes) {
     console.log(mes);
-    service.createIndex()
+    service.buildElastic()
       .then(function () {
         console.log("clean");
       })

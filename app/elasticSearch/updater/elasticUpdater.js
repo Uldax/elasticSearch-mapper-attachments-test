@@ -5,7 +5,9 @@ const updateModel = require('../../models/update.js'),
     elasticService = require("../elasticService"),
     IndexAction = require("./indexAction"),
     RefreshAction = require("./refreshAction"),
-    utils = require("../../helper/utils");
+    utils = require("../../helper/utils"),
+    logger = require('../../helper/logger'),
+    logPrefixe = "Updater : ";
 
 //Singleton : http://amanvirk.me/singleton-classes-in-es6/
 let instance = null;
@@ -102,9 +104,9 @@ class ElasticUpdater {
             }
             this.previousStateLength = this.state.length;
             if (this.state.length > 0) {
-                console.log("Numbers of failed :" + this.rejectResult.length + " / " + this.state.length);
+                logger.info(logPrefixe + "Numbers of failed :" + this.rejectResult.length + " / " + this.state.length);
                 this.rejectResult.forEach(function (element) {
-                    console.log(element.e);
+                    logger.error(element.e);
                 }, this);
             }
             setTimeout(that.executeUpdate.bind(this), that.timeBetweenUpdate);
@@ -117,14 +119,14 @@ class ElasticUpdater {
 
     //remove the listener on postgresql
     wakeUp() {
-        console.log("wake up");
+        logger.info("wake up");
         updateModel.unlisten();
         this.executeUpdate();
     }
 
     //Set listener on postgresql to wake up if insert
     sleep() {
-        console.log("sleep");
+        logger.info("sleep");
         updateModel.listenChannel("update", this.wakeUp.bind(this));
     }
 
@@ -141,7 +143,7 @@ class ElasticUpdater {
                 if (res) {
                     //Store the result of every action
                     that.state.push(res);
-                    console.log(that.state.length + " of " + size);
+                    logger.info(that.state.length + " of " + size);
                 }
                 return nextAction.promise;
             });

@@ -10,6 +10,7 @@ module.exports = {
         port: "9200",
         protocol: "http",
         serverIp: "localhost",
-        mainIndex : "opus"
+        mainIndex : "opus",
+        logLevel : "trace"
     }
 };

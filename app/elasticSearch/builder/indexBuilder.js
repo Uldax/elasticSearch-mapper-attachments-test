@@ -2,7 +2,8 @@
 //Class that build request to send to elastic search serveur
 const conf = require("../../config"),
     indexName = conf.elastic.mainIndex,
-    utils = require("../../helper/utils");
+    utils = require("../../helper/utils"),
+    striptags = require('striptags');
 
 
 const elasticIndexBuilder = {
@@ -91,7 +92,8 @@ const elasticIndexBuilder = {
 
         const requestData = {
             "layout_label": row.layout_label,
-            "pin_content": row.pin_label,
+            //Striptag remove html tags
+            "pin_content": striptags(row.pin_label),
             "pinboard_label": row.pinboard_label,
             "pin_vote": vote,
             "insertDate": row.registration,
@@ -99,7 +101,9 @@ const elasticIndexBuilder = {
             "pin_id": row.pin_id,
             "pinboard_id": row.pinboard_id,
             "groups_ids": ids,
-            "created_by": row.user_id
+            "created_by": row.user_id,
+            //TODO : use constant from builder
+            "document_type" : "pin"
         };
         return requestData;
     },

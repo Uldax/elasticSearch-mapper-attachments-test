@@ -79,18 +79,20 @@ router.post('/search', function (req, res, next) {
 });
 
 router.post('/searchTest', function (req, res, next) {
-    var querryString = req.body.requestString || "";
-    var userId = req.body.userId || 1;
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
 
+    var querryString = req.body.requestString || "";
+    var userId = req.body.userAuth || 0;
+    if (userId === 0 || querryString === "") {
+        res.send({
+            error: "Missing base parameters"
+        });
+        return;
+    }
     //Get group from user
     user.getGroupsForUser(userId)
         .then(function (row) {
             const resultSize = 8;
             const sb = new SearchBuilder(req.body,row.array,userId,resultSize);
-            console.log(sb);
             return elasticService.search(sb.search);       
         })
         .then(function(results){

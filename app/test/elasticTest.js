@@ -1,5 +1,4 @@
 var conf = require("../config");
-var mapping = require("../elasticMapping");
 //BDD style assertions for node.js
 var should = require('should');
 
@@ -45,7 +44,7 @@ function clean_all() {
             return testModel.insertFolder("root");
         })
         .then(function () {
-            return service.createIndex();
+            return service.buildElastic();
         })
         .catch(function (err) {
             console.log(err);
@@ -120,7 +119,7 @@ describe('Elastic Search', function () {
                         }
                     })
                     .then(function () {
-                        service.createIndex().then(function () {
+                        service.buildElastic().then(function () {
                             done();
                         })
                     })
@@ -259,7 +258,7 @@ describe('Elastic Search', function () {
         return testModel.restart_db()
             .then(function (mes) {
                 console.log(mes);
-                return service.createIndex();
+                return service.buildElastic();
             })
             .then(function () {
                 console.log("clean");
