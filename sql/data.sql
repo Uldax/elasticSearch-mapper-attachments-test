@@ -55,6 +55,7 @@ INSERT INTO pinboard.pin (pinboard_id, label, user_id) VALUES ((SELECT pinboard_
 INSERT INTO pinboard.pin (pinboard_id, label, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='secondPinboard'), 'fourthPin', 1);
 INSERT INTO pinboard.pin (pinboard_id, label, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='secondPinboard'), 'fifthPin', 1);
 INSERT INTO pinboard.pin (pinboard_id, label, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='secondPinboard'), 'sixthPin', 1);
+INSERT INTO pinboard.pin (pinboard_id, label, user_id) VALUES ((SELECT pinboard_id FROM pinboard.pinboard WHERE label='secondPinboard'), '<p> du texte au hasard </p>', 1);
 
 --On crée les votes associés aux pins
 INSERT INTO pinboard.vote_pin (pin_id, vote, user_id) VALUES ((SELECT pin_id FROM pinboard.pin WHERE label='firstPin'), 5, 1);
@@ -63,6 +64,7 @@ INSERT INTO pinboard.vote_pin (pin_id, vote, user_id) VALUES ((SELECT pin_id FRO
 INSERT INTO pinboard.vote_pin (pin_id, vote, user_id) VALUES ((SELECT pin_id FROM pinboard.pin WHERE label='fourthPin'), 8, 1);
 INSERT INTO pinboard.vote_pin (pin_id, vote, user_id) VALUES ((SELECT pin_id FROM pinboard.pin WHERE label='fifthPin'), 7, 1);
 INSERT INTO pinboard.vote_pin (pin_id, vote, user_id) VALUES ((SELECT pin_id FROM pinboard.pin WHERE label='sixthPin'), 10, 1);
+INSERT INTO pinboard.vote_pin (pin_id, vote, user_id) VALUES ((SELECT pin_id FROM pinboard.pin WHERE label='<p> du texte au hasard </p>'), 10, 1);
 
 ------------------------------------------------------------------------------------
 --                  GROUPS/DROITS

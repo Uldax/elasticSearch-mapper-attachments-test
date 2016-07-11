@@ -80,15 +80,17 @@ router.post('/search', function (req, res, next) {
 
 router.post('/searchTest', function (req, res, next) {
     var querryString = req.body.requestString || "";
-    var userId = req.body.userId || 1;
+    // var request = JSON.parse(req.body);
+    // console.log(request);
+    var userId = parseInt(req.body.userId) || 1;
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
-
+    let parameters = new Object(req.body);
     //Get group from user
     user.getGroupsForUser(userId)
         .then(function (row) {
-            const sb = new SearchBuilder(req.body,row.array,userId);
+            const sb = new SearchBuilder(parameters,row.array,userId);
             console.log(sb);
             return elasticService.search(sb.search);       
         })
