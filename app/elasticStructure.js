@@ -41,12 +41,11 @@ var elasticStructure = {
         }
     },
     "mappings": {
-  
         "document": {
-                  "_all": {
-                "analyzer": "nGram_analyzer",
-                "search_analyzer": "whitespace_analyzer"
-            },
+         "_all": {
+            "analyzer": "nGram_analyzer",
+            "search_analyzer": "whitespace_analyzer",
+         },
             "properties": {
                 "attachment": {
                     "type": "attachment",
@@ -56,7 +55,8 @@ var elasticStructure = {
                             "type": "string",
                             //For highlight
                             "term_vector": "with_positions_offsets",
-                            "store": true
+                            "store": true,
+                            "include_in_all": false
                         },
                         //Metadata supported
                         "title": { "store": "yes" },
@@ -84,23 +84,29 @@ var elasticStructure = {
                 },
                 "document_id": {
                     "type": "long",
-                     "index": "no"
+                    "include_in_all": false
                 },
                 "version_id": {
                     "type": "long",
-                    "index": "no"
+                    "include_in_all": false
                 },
                 "groups_ids": {
                     "type": "long",
-                    "index": "no"
+                    "include_in_all": false
                 },
                 "created_by": {
                     "type": "long",
-                    "index": "no"
+                    "include_in_all": false
                 }
             }
         },
         "pin": {
+            "_all": {
+            "analyzer": "nGram_analyzer",
+            "search_analyzer": "whitespace_analyzer",
+            //highlight
+            "store" : true,
+         },
             "properties": {
                 "layout_label": {
                     "type": "string"
@@ -109,7 +115,8 @@ var elasticStructure = {
                     "type": "string"
                 },
                 "pin_vote": {
-                    "type": "string"
+                    "type": "string",
+                    "include_in_all": false
                 },
                 //Todo remove html from content
                 "pin_content": {
@@ -118,34 +125,34 @@ var elasticStructure = {
 
                 "pin_id": {
                     "type": "long",
-                     "index": "no"
+                    "include_in_all": false
                 },
                 //For pin right
                 "pinboard_id": {
                     "type": "long",
-                     "index": "no"
+                    "include_in_all": false
                 },
                 "groups_ids": {
                     "type": "long",
-                     "index": "no"
+                    "include_in_all": false
                 },
                 //For update layout
                 "layout_id": {
                     "type": "long",
-                     "index": "no"
+                    "include_in_all": false
                 },
                 //If pin doesn't have group
                 "created_by": {
                     "type": "long",
-                     "index": "no"
+                    "include_in_all": false
                 },
                 "insertDate": {
-                    "type": "date"
+                    "type": "date",
+                    "include_in_all": false
                 },
                 "document_type": {
                     "type": "string"
                 },
-
             }
         }
     }

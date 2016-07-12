@@ -27,7 +27,7 @@ app.use(function (req, res, next) {
 //Whitelisting certain IP addresses, while denying all other IPs:
 //Postman and local host
 
-var ips = ['::1',' ::ffff:127.0.0.1', '127.0.0.1'];
+var ips = ['::ffff:127.0.0.1','::1',' ::ffff:127.0.0.1', '127.0.0.1'];
 app.use(ipfilter(ips, { mode: 'allow' }));
 
 

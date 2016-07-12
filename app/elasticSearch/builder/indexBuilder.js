@@ -10,7 +10,7 @@ const elasticIndexBuilder = {
 
 //Group_ids optional
     createDocument: function (row, group_ids) {
-        const base64file = utils.base64_encode(row.path);
+        const base64file = utils.base64_encode('../'+row.path);
         const fileSize = Buffer.byteLength(base64file);
         const ids = group_ids || [];
         if( fileSize > 104857600) {
@@ -103,7 +103,7 @@ const elasticIndexBuilder = {
             "groups_ids": ids,
             "created_by": row.user_id,
             //TODO : use constant from builder
-            "document_type" : "pin"
+            "document_type" : "pin",
         };
         return requestData;
     },

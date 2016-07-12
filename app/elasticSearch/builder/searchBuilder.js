@@ -44,13 +44,9 @@ const ALL_RESULTS = 0,
     TIE_BREAKER = 0.3;
 
 class SearchBuilder {
-    constructor(requestParam, group_id, user_id, size) {
+    constructor(size) {
         //Todo verification
-        this.requestParam = requestParam;
-        this.group_id = group_id;
-        this.user_id = user_id;
         this.size = size;
-        this.fromValue = (requestParam.page > 1) ? ((requestParam.page - 1) * size) : 0
         this.fieldToSearch = [
             'attachment.content',
             'attachment.name',
@@ -178,11 +174,15 @@ class SearchBuilder {
         }
     }
 
-    get search() {
+    buildSearch(requestParam,group_id,user_id) {
+        this.requestParam = requestParam;
+        this.group_id = group_id;
+        this.user_id = user_id;
+        this.fromValue = (requestParam.page > 1) ? ((requestParam.page - 1) * this.size) : 0;
+
         var ejsBody = ejs.Request()
             .from(this.fromValue)
             .size(this.size)
-            //exclude sources
             .source("*", ["attachment._content"])
             .highlight(this.highlight())
             .query(
@@ -198,7 +198,7 @@ class SearchBuilder {
         ejsBody.toJSON().query.bool.filter = this.filter();
         ejsBody.toJSON().query.bool.minimum_should_match = 1;
         //ejs doesn't support complexe phrase filter too
-        ejsBody.toJSON().suggest = this.suggest();
+        //ejsBody.toJSON().suggest = this.suggest();
         return ejsBody;
     }
 }

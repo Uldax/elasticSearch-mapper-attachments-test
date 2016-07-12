@@ -82,11 +82,11 @@ const elasticService = {
                                     resolve(body.total + " document updated");
                                 } else if (body.total == body.noops) {
                                     resolve(body.total + " update ignored");
-                                }
+                                }           
                             }
-
                             else {
                                 //TODO handle other case
+                                //no errreur but 0
                                 console.log(body);
                                 reject(body);
                             }

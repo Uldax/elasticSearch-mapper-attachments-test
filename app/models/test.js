@@ -273,6 +273,7 @@ const testModel = {
                                     }
                                     filenames.forEach(function (filename) {
                                         let path = folder + "/" + filename;
+                                        console.log(path);
                                         if (utils.getExt(filename)) {
                                             promiseArray.push(testModel.insertFileInFolder("root", filename, path));
                                         }
