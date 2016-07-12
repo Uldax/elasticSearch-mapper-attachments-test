@@ -79,7 +79,6 @@ router.post('/search', function (req, res, next) {
 });
 
 router.post('/searchTest', function (req, res, next) {
-
     var querryString = req.body.requestString || "";
     var userId = req.body.userAuth || 0;
     if (userId === 0 || querryString === "") {

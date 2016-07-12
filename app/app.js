@@ -26,7 +26,11 @@ app.use(function (req, res, next) {
 
 //Whitelisting certain IP addresses, while denying all other IPs:
 //Postman and local host
+<<<<<<< HEAD
 var ips = ['::1',' ::ffff:127.0.0.1', '127.0.0.1'];
+=======
+var ips = ['::ffff:127.0.0.1', '127.0.0.1', '::1'];
+>>>>>>> b37b61a665ec7e4d7833493a0b855fc52fd7b312
 app.use(ipfilter(ips, { mode: 'allow' }));
 
 
@@ -37,6 +41,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/bower_components', express.static(__dirname + '/bower_components'));
+
+//Set CORS headers
+app.all('/*', function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*"); // restrict it to the required domain
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  // Set custom headers for CORS
+  res.header('Access-Control-Allow-Headers', 'Content-type,Accept,X-Access-Token');
+  // When performing a cross domain request, you will recieve
+  // a preflighted request first. This is to check if our the app is safe.
+  if (req.method == 'OPTIONS') {
+    res.status(200).end();
+  } else {
+    next();
+  }
+});
+
 app.use('/', routes);
 
 

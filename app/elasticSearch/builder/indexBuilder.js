@@ -90,10 +90,17 @@ const elasticIndexBuilder = {
         let ids = row.group_ids || [];
         let vote = row.vote || 0;
 
+        let pin_content = row.pin_label.replace(/<\/?[^>]+(>|$)/g, "");
+
         const requestData = {
             "layout_label": row.layout_label,
+<<<<<<< HEAD
             //Striptag remove html tags
             "pin_content": striptags(row.pin_label),
+=======
+            "pin_content": pin_content,
+           // "pin_content" : row.pin_label,
+>>>>>>> b37b61a665ec7e4d7833493a0b855fc52fd7b312
             "pinboard_label": row.pinboard_label,
             "pin_vote": vote,
             "insertDate": row.registration,

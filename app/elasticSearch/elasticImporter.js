@@ -8,7 +8,7 @@ const elasticService = require('./elasticService.js'),
     pinModel = require('../models/pin.js'),
     elasticUpdater = require('./updater/elasticUpdater.js'),
     indexBuilder = require('./builder/indexBuilder.js'),
-    utils = require('../helper/utils.js')
+    utils = require('../helper/utils.js');
 
 const elasticImporter = {
     state: [],
@@ -25,23 +25,6 @@ const elasticImporter = {
         .catch(function(error) {
             console.log(error.message || error);
         });
-        
-
-        // importPins()
-        //     .then(function (message) {
-        //         console.log(message);
-        //     })
-        //     .catch(function (error) {
-        //         console.log(error.message || error);
-        //     });
-
-        // importFiles()
-        //     .then(function (message) {
-        //         console.log(message);
-        //     })
-        //     .catch(function (error) {
-        //         console.log(error.message || error);
-        //     });
     },
 
 };

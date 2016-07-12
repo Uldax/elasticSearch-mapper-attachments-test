@@ -7,7 +7,7 @@ Param{
     page : int
 
     //Facultatif
-    exact : true or (false || empty)
+    exact : 1 or (0 || empty)
     doctype : field or array [field]  
     orderBy : object or array [{ fieldName : string , order : (asc || desc)}]
     date : object { begin, end } || object { before } || object { after}
@@ -58,9 +58,8 @@ class SearchBuilder {
             'pin_content',
             'layout_label',
         ];
-        console.log(requestParam);
     }
-
+ 
     userFilter() {
         var ejstest = ejs.BoolQuery()
             .should([
@@ -161,7 +160,9 @@ class SearchBuilder {
     highlight() {
         return ejs
             .Highlight(this.fieldToSearch)
+            .fragmentSize(20)
             .numberOfFragments(3);
+
     }
 
     //order can only be 'asc' or 'desc'
