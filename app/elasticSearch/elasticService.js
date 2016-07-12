@@ -278,7 +278,7 @@ const elasticService = {
         });
     },
 
-    createIndex: function () {e
+    createIndex: function () {
         return new Promise(function (resolve, reject) {
             const options = {
                 method: 'POST',
